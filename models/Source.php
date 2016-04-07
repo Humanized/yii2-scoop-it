@@ -132,7 +132,6 @@ class Source extends \yii\db\ActiveRecord
         if (!isset($topic)) {
             return false;
         }
-
         try {
             $model = new SourceTopic(['topic_id' => $topicId, 'source_id' => $this->id]);
             if ($model->save()) {
