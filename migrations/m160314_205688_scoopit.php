@@ -78,19 +78,18 @@ class m160314_205688_scoopit extends Migration
 
 
         //Linkage table between topic and a tag (scoop.it style)
-        $this->createTable('scoopit_topic_tag', ['topic_id' => 'BIGINT', 'tag_id' => 'INT(11)']);
-        $this->addForeignKey('fk_scoopit_topic_tag_tag', 'scoopit_topic_tag', 'tag_id', 'scoopit_tag', 'id', 'CASCADE', 'CASCADE');
-        $this->addForeignKey('fk_scoopit_topic_tag_topic', 'scoopit_topic_tag', 'topic_id', 'scoopit_topic', 'id', 'CASCADE', 'CASCADE');
-        $this->addPrimaryKey('pk_scoopit_topic_tag', 'scoopit_topic_tag', [ 'tag_id', 'topic_id']);
+        $this->createTable('scoopit_scoop_tag', ['scoop_id' => 'BIGINT', 'tag_id' => 'INT(11)']);
+
+        $this->addForeignKey('fk_scoop_tag_scoop', 'scoopit_scoop_tag', 'scoop_id', 'scoopit_scoop', 'id', 'CASCADE', 'CASCADE');
+        $this->addForeignKey('fk_scoop_tag_tag', 'scoopit_scoop_tag', 'tag_id', 'scoopit_tag', 'id', 'CASCADE', 'CASCADE');
+        $this->addPrimaryKey('pk_scoopit_scoop_tag', 'scoopit_scoop_tag', [ 'tag_id', 'scoop_id']);
 
 
-        //Linkage table between url retrieved and a topic (scoop.it style)
-        $this->createTable('scoopit_scoop_topic', ['scoop_id' => 'BIGINT', 'topic_id' => 'BIGINT']);
-
-        $this->addForeignKey('fk_scoop_topic_scoop', 'scoopit_scoop_topic', 'scoop_id', 'scoopit_scoop', 'id', 'CASCADE', 'CASCADE');
-        $this->addForeignKey('fk_scoop_topic_topic', 'scoopit_scoop_topic', 'topic_id', 'scoopit_topic', 'id', 'CASCADE', 'CASCADE');
-        $this->addPrimaryKey('pk_scoop_topic', 'scoopit_scoop_topic', ['scoop_id', 'topic_id']);
-
+        //Linkage table between topic and a tag (scoop.it style)
+        $this->createTable('scoopit_source_topic', ['source_id' => 'BIGINT', 'topic_id' => 'BIGINT']);
+        $this->addForeignKey('fk_source_topic_source', 'scoopit_source_topic', 'source_id', 'scoopit_source', 'id', 'CASCADE', 'CASCADE');
+        $this->addForeignKey('fk_source_topic_tag', 'scoopit_source_topic', 'topic_id', 'scoopit_topic', 'id', 'CASCADE', 'CASCADE');
+        $this->addPrimaryKey('pk_scoopit_source_tag', 'scoopit_source_topic', [ 'topic_id', 'source_id']);
 
         //Linkage table between source and keyword tags (highest content refinement forseen)
         //Unable to populate as of 20/3/2016...

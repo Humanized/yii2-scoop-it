@@ -87,4 +87,29 @@ class Scoop extends \yii\db\ActiveRecord
         $this->setAttributes($attributes);
     }
 
+    public function linkTag($tag)
+    {
+
+        $tagId = $tag;
+        if (!is_numeric($tag)) {
+            $model = Tag::findOne(['name' => $tag]);
+            if (!isset($model)) {
+                return false;
+            }
+            $tagId = $model->id;
+        }
+        $model = new ScoopTag(['topic_id' => $this->id, 'tag_id' => $tagId]);
+        try {
+            if ($model->save()) {
+                if (php_sapi_name() == "cli") {
+                    echo 'New Topic linked to Tag' . "\n";
+                }
+            }
+        } catch (\Exception $ex) {
+            
+        }
+
+        return true;
+    }
+
 }

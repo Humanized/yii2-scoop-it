@@ -86,6 +86,7 @@ class SourceController extends Controller
                 $model = new Tag(['name' => $tag]);
                 $model->save();
             }
+            $scoop->linkTag($model->id);
         }
     }
 
