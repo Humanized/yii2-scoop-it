@@ -49,6 +49,26 @@ class Client extends \GuzzleHttp\Client
         ]);
     }
 
+    public function getSources($topicId, $lastUpdate = 0)
+    {
+
+        return $this->_getSources('curatedPosts', $topicId, $lastUpdate);
+    }
+
+    public function getScoops($topicId, $lastUpdate = 0)
+    {
+
+        return $this->_getSources('curatedPosts', $topicId, $lastUpdate);
+    }
+
+    public function _getSources($var, $topicId, $lastUpdate)
+    {
+        $raw = $this->get('topic', ['query' => ['since' => time() - (60 * 60 * $lastUpdate), 'curable' => 50, 'curablePage' => 50, 'id' => $topicId]
+        ]);
+        $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
+        return $out->$var;
+    }
+
     public function getTopics($filerOutput = FALSE)
     {
         $raw = $this->get('company/topics');
@@ -69,7 +89,6 @@ class Client extends \GuzzleHttp\Client
         $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->keywords;
 
         return $out;
-
     }
 
     public function getTopicFilter()

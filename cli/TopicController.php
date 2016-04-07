@@ -41,7 +41,6 @@ class TopicController extends Controller
         $this->stdout('found ' . count($topicData) . ' topics' . "\n");
         foreach ($topicData as $topic) {
             $this->_syncTopic($topic);
-
             $this->actionKeywords($topic['id']);
         }
     }
