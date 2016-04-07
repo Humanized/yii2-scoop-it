@@ -49,4 +49,46 @@ class Client extends \GuzzleHttp\Client
         ]);
     }
 
+    public function getTopics($filerOutput = FALSE)
+    {
+        $raw = $this->get('company/topics');
+        $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topics;
+        if ($filerOutput == TRUE) {
+            $getDataFn = $this->getTopicFilter();
+            $out = array_values(array_filter(array_map($getDataFn, $out)));
+        }
+        return $out;
+    }
+
+    public function getTopicKeywords($topicId, $filerOutput = FALSE)
+    {
+        $raw = $this->get('sse', ['query' => [
+                'topic' => $topicId
+        ]]);
+
+        $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->keywords;
+
+        return $out;
+
+    }
+
+    public function getTopicFilter()
+    {
+        $filter = function($topic) {
+            return true;
+        };
+        $isSetFilter = isset(Yii::$app->params['scoopit']['topicOptions']) && isset(Yii::$app->params['scoopit']['topicOptions']['importFilter']);
+        if ($isSetFilter) {
+            $filter = Yii::$app->params['scoopit']['topicOptions']['importFilter'];
+        }
+        $importTopic = function($topic) use ($filter) {
+            //Remove condition when using real account
+            if ($filter($topic)) {
+                //  echo $topic->shortName . "\n";
+                return ["id" => $topic->id, "name" => $topic->shortName];
+            }
+        };
+        return $importTopic;
+    }
+
 }
