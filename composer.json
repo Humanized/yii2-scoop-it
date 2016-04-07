@@ -14,7 +14,7 @@
         "yiisoft/yii2": "2.0.7",
         "guzzlehttp/guzzle": "^6.1",
         "guzzlehttp/oauth-subscriber": "0.3.*",
-        "kop/yii2-scroll-pager": "dev-master"
+        "darkcs/yii2-infinite-scroll": "dev-master"
     },
     "autoload": {
         "psr-4": {
