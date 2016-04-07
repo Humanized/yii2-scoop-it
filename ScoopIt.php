@@ -1,14 +1,24 @@
 <?php
 
-namespace \\humanized\\scoopit\;
+namespace humanized\scoopit;
 
 /**
- * This is just an example.
+ * 
+ * @name Yii2 RBAC Module Class 
+ * @version 0.1 
+ * @author Jeffrey Geyssens <jeffrey@humanized.be>
+ * @package yii2-rbac
  */
-class AutoloadExample extends \yii\base\Widget
+class ScoopIt extends \yii\base\Module
 {
-    public function run()
+
+    public function init()
     {
-        return "Hello!";
+        parent::init();
+        if (\Yii::$app instanceof \yii\console\Application) {
+            $this->controllerNamespace = 'humanized\scoopit\cli';
+        }
+    
     }
+
 }
