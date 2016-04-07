@@ -49,8 +49,8 @@ class ScoopSearch extends Scoop
 
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
-        
         ]);
+        $dataProvider->pagination->pageSize = 2;
 
         $this->load($params);
 
