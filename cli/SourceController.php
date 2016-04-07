@@ -43,18 +43,24 @@ class SourceController extends Controller
 
     public function actionImportTopic($topicId)
     {
+        if (NULL === \humanized\scoopit\models\Topic::findOne($topicId)) {
+            $this->stdout("No Such Topic \n");
+            return 1;
+        }
         $client = new Client();
         //  $sources = $client->getSources($topicId);
         //  foreach ($sources as $source) {
         //  }
         $scoops = $client->getScoops($topicId);
         foreach ($scoops as $scoop) {
-            $this->_import($scoop, TRUE);
+            $this->_import($scoop, $topicId, TRUE);
         }
+
+
         return 0;
     }
 
-    private function _import($item, $withScoop = FALSE)
+    private function _import($item, $topicId, $withScoop = FALSE)
     {
         $model = Source::findOne($item->id);
         if (!isset($model)) {
@@ -70,23 +76,29 @@ class SourceController extends Controller
         }
 
         if (isset($model)) {
+            $model->linkTopic($topicId);
+
             $this->_importTags($item);
             if ($withScoop) {
                 $this->_importScoop($item);
             }
         }
+        return $model->id;
     }
 
     private function _importTags($item)
     {
         $scoop = Scoop::findOne($item->id);
-        foreach ($item->tags as $tag) {
-            $model = Tag::findOne(['name' => $tag]);
-            if (!isset($model)) {
-                $model = new Tag(['name' => $tag]);
-                $model->save();
+        if (isset($scoop)) {
+            foreach ($item->tags as $tag) {
+                $this->stdout($tag . "\n");
+                $model = Tag::findOne(['name' => $tag]);
+                if (!isset($model)) {
+                    $model = new Tag(['name' => $tag]);
+                    $model->save();
+                }
+                $scoop->linkTag($model->id);
             }
-            $scoop->linkTag($model->id);
         }
     }
 

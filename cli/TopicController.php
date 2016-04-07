@@ -40,7 +40,7 @@ class TopicController extends Controller
         $topicData = $client->getTopics(TRUE);
         $this->stdout('found ' . count($topicData) . ' topics' . "\n");
         foreach ($topicData as $topic) {
-            $this->_syncTopic($topic);
+            $this->_syncTopic($topic,$publish);
             $this->actionKeywords($topic['id']);
         }
     }
@@ -62,7 +62,7 @@ class TopicController extends Controller
         return 0;
     }
 
-    private function _syncTopic($topic)
+    private function _syncTopic($topic,$publish)
     {
         $model = Topic::findOne($topic['id']);
         //Create a new model if required

@@ -126,4 +126,23 @@ class Source extends \yii\db\ActiveRecord
         $this->setAttributes($attributes);
     }
 
+    public function linkTopic($topicId)
+    {
+        $topic = Topic::findOne($topicId);
+        if (!isset($topic)) {
+            return false;
+        }
+
+        try {
+            $model = new SourceTopic(['topic_id' => $topicId, 'source_id' => $this->id]);
+            if ($model->save()) {
+                if (php_sapi_name() == "cli") {
+                    echo 'New Topic linked to Source' . "\n";
+                }
+            }
+        } catch (\Exception $ex) {
+            
+        }
+    }
+
 }
