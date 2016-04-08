@@ -8,15 +8,20 @@ use yii\widgets\Pjax;
 /* @var $dataProvider yii\data\ActiveDataProvider */
 ?>
 
-<?php // echo $this->render('_search', ['model' => $searchModel]);  ?>
+<?php  echo $this->render('_search', ['model' => $model]);  ?>
 
 
-<?php Pjax::begin(); ?>    <?=
+<?php Pjax::begin(['id'=>'news-list']); ?>    <?=
 
 ListView::widget([
     'dataProvider' => $dataProvider,
-    'itemOptions' => ['class' => 'item'],
+    'options' => [
+        'class' => '.list-view',
+    ],
     'itemView' => '_item',
+    'summary' => false,
+
+
 ])
 ?>
 <?php Pjax::end(); ?>

@@ -13,6 +13,10 @@ use humanized\scoopit\models\Scoop;
 class ScoopSearch extends Scoop
 {
 
+    public $title;
+    public $keywords = [];
+    public $topicId = NULL;
+
     /**
      * @inheritdoc
      */
@@ -20,6 +24,7 @@ class ScoopSearch extends Scoop
     {
         return [
             [['id', 'date_published'], 'integer'],
+            [['title', 'keywords'], 'safe'],
         ];
     }
 
@@ -42,7 +47,10 @@ class ScoopSearch extends Scoop
     public function search($params)
     {
         $query = Scoop::find()->joinWith('source');
-
+        if (isset($this->topicId)) {
+            $query->joinWith('source.topics');
+            $query->andWhere(['scoopit_source_topic.topic_id' => $this->topicId]);
+        }
 
 
         // add conditions that should always apply here
@@ -50,7 +58,7 @@ class ScoopSearch extends Scoop
         $dataProvider = new ActiveDataProvider([
             'query' => $query,
         ]);
-        $dataProvider->pagination->pageSize = 2;
+        $dataProvider->pagination->pageSize = 3;
 
         $this->load($params);
 
@@ -60,9 +68,10 @@ class ScoopSearch extends Scoop
             return $dataProvider;
         }
 
+        $query->andFilterWhere(['LIKE', 'scoopit_source.title', $this->title]);
+
         // grid filtering conditions
         $query->andFilterWhere([
-            'id' => $this->id,
             'date_published' => $this->date_published,
         ]);
         $query->orderBy('date_published,date_retrieved');

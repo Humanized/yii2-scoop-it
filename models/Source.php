@@ -84,6 +84,22 @@ class Source extends \yii\db\ActiveRecord
     /**
      * @return \yii\db\ActiveQuery
      */
+    public function getSourceTopics()
+    {
+        return $this->hasMany(SourceTopic::className(), ['source_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTopics()
+    {
+        return $this->hasMany(Topic::className(), ['id' => 'topic_id'])->viaTable('scoopit_source_topic', ['source_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
     public function getSourceKeywords()
     {
         return $this->hasMany(SourceKeyword::className(), ['source_id' => 'id']);
