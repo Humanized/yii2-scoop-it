@@ -1,7 +1,8 @@
 <?php
 
 use yii\helpers\Html;
-use yii\widgets\ActiveForm;
+use kartik\form\ActiveForm;
+use kartik\daterange\DateRangePicker;
 
 /* @var $this yii\web\View */
 /* @var $model humanized\scoopit\models\ScoopSearch */
@@ -18,7 +19,24 @@ use yii\widgets\ActiveForm;
     ?>
 
     <?= $form->field($model, 'title') ?>
-    <?= $form->field($model, 'date_published') ?>
+    <?php
+    echo $form->field($model, 'date_published', [
+        'addon' => ['prepend' => ['content' => '<i class="glyphicon glyphicon-calendar"></i>']],
+        'options' => ['class' => 'drp-container form-group']
+    ])->widget(DateRangePicker::classname(), [
+        'useWithAddon' => true,
+        'presetDropdown' => true,
+        'pluginOptions' => [
+            'locale' => [
+                'format' => 'd/M/Y',
+              //  'prefix' => 'Published Between ',
+                'separator' => ' to ',
+            ],
+            'opens' => 'left'
+        ],
+        'convertFormat' => true,
+    ]);
+    ?>
 
     <div class="form-group">
         <?= Html::submitButton('Search', ['class' => 'btn btn-primary']) ?>

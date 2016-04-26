@@ -16,6 +16,8 @@ class ScoopSearch extends Scoop
     public $title;
     public $keywords = [];
     public $topicId = NULL;
+    public $date_range_from;
+    public $date_range_to;
 
     /**
      * @inheritdoc
@@ -23,8 +25,9 @@ class ScoopSearch extends Scoop
     public function rules()
     {
         return [
-            [['id', 'date_published'], 'integer'],
-            [['title', 'keywords'], 'safe'],
+            [['id'], 'integer'],
+            [['date_range_from','date_range_to'], 'date'],
+            [['title', 'date_range_from', 'date_range_to', 'keywords'], 'safe'],
         ];
     }
 
@@ -74,6 +77,7 @@ class ScoopSearch extends Scoop
         $query->andFilterWhere([
             'date_published' => $this->date_published,
         ]);
+
         $query->orderBy('date_published,date_retrieved');
 
         return $dataProvider;
