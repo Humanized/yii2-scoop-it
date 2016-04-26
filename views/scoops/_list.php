@@ -8,20 +8,20 @@ use yii\widgets\Pjax;
 /* @var $dataProvider yii\data\ActiveDataProvider */
 ?>
 
-<?php  echo $this->render('_search', ['model' => $model]);  ?>
+<?php echo $this->render('_search', ['model' => $model]); ?>
 
 
-<?php Pjax::begin(['id'=>'news-list']); ?>    <?=
+<?php Pjax::begin(['id' => 'news-list']); ?>    <?=
 
 ListView::widget([
     'dataProvider' => $dataProvider,
-    'options' => [
-        'class' => '.list-view',
-    ],
+    'itemOptions' => ['class' => 'item'],
     'itemView' => '_item',
     'summary' => false,
-
-
+    'pager' => [
+        'class' => \kop\y2sp\ScrollPager::className(),
+        'triggerOffset' => 100,
+    ]
 ])
 ?>
 <?php Pjax::end(); ?>
