@@ -19,20 +19,20 @@ class m160314_205688_scoopit extends Migration
         $this->createTable('scoopit_keyword', [
             'id' => $this->primaryKey(),
             'name' => $this->string(255)->unique(),
-        ]);
+                ], $this->tableOptions);
 
         $this->createTable('scoopit_topic', [
             'id' => 'BIGINT NOT NULL',
             'is_published' => $this->boolean()->defaultValue(FALSE),
             'name' => $this->string(255)->unique(),
-        ]);
+                ], $this->tableOptions);
         $this->addPrimaryKey('pk_topic', 'scoopit_topic', 'id');
 
         $this->createTable('scoopit_topic_map', [
             'id' => $this->primaryKey(),
             'name' => $this->string(255)->unique(),
             'topic_id' => 'BIGINT NOT NULL'
-        ]);
+                ], $this->tableOptions);
         $this->addForeignKey('fk_topic_map', 'scoopit_topic_map', 'topic_id', 'scoopit_topic', 'id');
 
         //Main repository for all obtained scoopit results (as-per requirement)
@@ -56,11 +56,11 @@ class m160314_205688_scoopit extends Migration
         $this->createTable('scoopit_tag', [
             'id' => $this->primaryKey(),
             'name' => $this->string(255)->unique(),
-        ]);
+                ], $this->tableOptions);
         $this->createTable('scoopit_scoop', [
             'id' => 'BIGINT', //Provided by scoop.it for deduplication check,
             'date_published' => 'INT(11) NOT NULL',
-        ]);
+                ], $this->tableOptions);
 
         $this->addPrimaryKey('pk_source', 'scoopit_scoop', 'id');
         $this->addForeignKey('fk_source', 'scoopit_scoop', 'id', 'scoopit_source', 'id', 'CASCADE', 'CASCADE');
@@ -71,14 +71,14 @@ class m160314_205688_scoopit extends Migration
 
         //Linkage table between topic and keyword tags 
 
-        $this->createTable('scoopit_topic_keyword', ['topic_id' => 'BIGINT', 'keyword_id' => 'INT(11)']);
+        $this->createTable('scoopit_topic_keyword', ['topic_id' => 'BIGINT', 'keyword_id' => 'INT(11)'], $this->tableOptions);
         $this->addForeignKey('fk_scoopit_scoop_keyword_scoop', 'scoopit_topic_keyword', 'topic_id', 'scoopit_topic', 'id', 'CASCADE', 'CASCADE');
         $this->addForeignKey('fk_scoopit_scoop_keyword_keyword', 'scoopit_topic_keyword', 'keyword_id', 'scoopit_keyword', 'id', 'CASCADE', 'CASCADE');
         $this->addPrimaryKey('pk_scoopit_scoop_keyword', 'scoopit_topic_keyword', ['topic_id', 'keyword_id']);
 
 
         //Linkage table between topic and a tag (scoop.it style)
-        $this->createTable('scoopit_scoop_tag', ['scoop_id' => 'BIGINT', 'tag_id' => 'INT(11)']);
+        $this->createTable('scoopit_scoop_tag', ['scoop_id' => 'BIGINT', 'tag_id' => 'INT(11)'], $this->tableOptions);
 
         $this->addForeignKey('fk_scoop_tag_scoop', 'scoopit_scoop_tag', 'scoop_id', 'scoopit_scoop', 'id', 'CASCADE', 'CASCADE');
         $this->addForeignKey('fk_scoop_tag_tag', 'scoopit_scoop_tag', 'tag_id', 'scoopit_tag', 'id', 'CASCADE', 'CASCADE');
@@ -86,14 +86,14 @@ class m160314_205688_scoopit extends Migration
 
 
         //Linkage table between topic and a tag (scoop.it style)
-        $this->createTable('scoopit_source_topic', ['source_id' => 'BIGINT', 'topic_id' => 'BIGINT']);
+        $this->createTable('scoopit_source_topic', ['source_id' => 'BIGINT', 'topic_id' => 'BIGINT'], $this->tableOptions);
         $this->addForeignKey('fk_source_topic_source', 'scoopit_source_topic', 'source_id', 'scoopit_source', 'id', 'CASCADE', 'CASCADE');
         $this->addForeignKey('fk_source_topic_tag', 'scoopit_source_topic', 'topic_id', 'scoopit_topic', 'id', 'CASCADE', 'CASCADE');
         $this->addPrimaryKey('pk_scoopit_source_tag', 'scoopit_source_topic', [ 'topic_id', 'source_id']);
 
         //Linkage table between source and keyword tags (highest content refinement forseen)
         //Unable to populate as of 20/3/2016...
-        $this->createTable('scoopit_source_keyword', ['source_id' => 'BIGINT', 'keyword_id' => 'INT(11)']);
+        $this->createTable('scoopit_source_keyword', ['source_id' => 'BIGINT', 'keyword_id' => 'INT(11)'], $this->tableOptions);
         $this->addForeignKey('fk_source_keyword_source', 'scoopit_source_keyword', 'source_id', 'scoopit_source', 'id', 'CASCADE', 'CASCADE');
         $this->addForeignKey('fk_source_keyword_keyword', 'scoopit_source_keyword', 'keyword_id', 'scoopit_keyword', 'id', 'CASCADE', 'CASCADE');
         $this->addPrimaryKey('pk_source_keyword', 'scoopit_source_keyword', ['source_id', 'keyword_id']);

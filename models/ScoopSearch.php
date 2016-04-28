@@ -78,7 +78,7 @@ class ScoopSearch extends Scoop
             'date_published' => $this->date_published,
         ]);
 
-        $query->orderBy('date_published,date_retrieved');
+        $query->orderBy('date_published');
 
         return $dataProvider;
     }
