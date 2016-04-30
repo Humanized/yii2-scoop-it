@@ -5,6 +5,7 @@ namespace humanized\scoopit\controllers;
 use Yii;
 use yii\web\Controller;
 use yii\web\NotFoundHttpException;
+use humanized\scoopit\models\gui\ScoopSearch;
 
 /**
  * IconRegisterController implements the CRUD actions for IconRegister model.

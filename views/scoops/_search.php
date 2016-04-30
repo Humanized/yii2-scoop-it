@@ -3,6 +3,7 @@
 use yii\helpers\Html;
 use kartik\form\ActiveForm;
 use kartik\daterange\DateRangePicker;
+use kartik\widgets\Select2;
 
 /* @var $this yii\web\View */
 /* @var $model humanized\scoopit\models\ScoopSearch */
@@ -20,6 +21,14 @@ use kartik\daterange\DateRangePicker;
 
     <?= $form->field($model, 'title') ?>
     <?php
+    // Normal select with ActiveForm & model
+    echo $form->field($model, 'keywords')->widget(Select2::classname(), [
+        'data' => (isset($keywordData) ? $keywordData : \humanized\scoopit\models\gui\SearchLabel::getSelectData()),
+        'options' => ['placeholder' => 'Select keywords ...'],
+        'pluginOptions' => [
+            'allowClear' => true
+        ],
+    ]);
     echo $form->field($model, 'date_published', [
         'addon' => ['prepend' => ['content' => '<i class="glyphicon glyphicon-calendar"></i>']],
         'options' => ['class' => 'drp-container form-group']
@@ -29,7 +38,7 @@ use kartik\daterange\DateRangePicker;
         'pluginOptions' => [
             'locale' => [
                 'format' => 'd/M/Y',
-              //  'prefix' => 'Published Between ',
+                //  'prefix' => 'Published Between ',
                 'separator' => ' to ',
             ],
             'opens' => 'left'

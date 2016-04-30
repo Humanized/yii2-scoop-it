@@ -1,6 +1,6 @@
 <?php
 
-namespace humanized\scoopit\models;
+namespace humanized\scoopit\models\gui;
 
 use Yii;
 use yii\base\Model;
