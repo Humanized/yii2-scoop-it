@@ -11,7 +11,7 @@
         }
     ],
     "require": {
-        "yiisoft/yii2": "2.0.7",
+        "yiisoft/yii2": ">=2.0.7",
         "guzzlehttp/guzzle": "^6.1",
         "guzzlehttp/oauth-subscriber": "0.3.*",
         "kop/yii2-scroll-pager": "2.4.1",
