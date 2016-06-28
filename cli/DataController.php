@@ -26,12 +26,11 @@ use \humanized\scoopit\models\Tag;
  * @package yii2-rbac
  *
  */
-class SourceController extends Controller
+class DataController extends Controller
 {
 
     public function actionIndex($lastUpdate)
     {
-
         $client = new Client();
         $topics = $client->getTopics(TRUE);
         foreach ($topics as $topic) {
@@ -48,9 +47,7 @@ class SourceController extends Controller
             return 1;
         }
         $client = new Client();
-        //  $sources = $client->getSources($topicId);
-        //  foreach ($sources as $source) {
-        //  }
+
         $scoops = $client->getScoops($topicId);
         foreach ($scoops as $scoop) {
             $this->_import($scoop, $topicId, TRUE);

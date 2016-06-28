@@ -25,7 +25,7 @@ use humanized\scoopit\models\Keyword;
  * @package yii2-rbac
  *
  */
-class TopicController extends Controller
+class SetupController extends Controller
 {
 
     public function actionIndex($publish = 0)
