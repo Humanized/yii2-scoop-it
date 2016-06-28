@@ -23,10 +23,13 @@ use kartik\widgets\Select2;
     <?php
     // Normal select with ActiveForm & model
     echo $form->field($model, 'keywords')->widget(Select2::classname(), [
-        'data' => (isset($keywordData) ? $keywordData : \humanized\scoopit\models\gui\SearchLabel::getSelectData()),
+        'id' => 'search-label',
+        'data' => (\humanized\scoopit\models\gui\SearchLabel::getSelectData()),
         'options' => ['placeholder' => 'Select keywords ...'],
         'pluginOptions' => [
-            'allowClear' => true
+            'multiple' => true,
+            'allowClear' => true,
+            'minimumInputLength' => 2,
         ],
     ]);
     echo $form->field($model, 'date_published', [
@@ -37,7 +40,7 @@ use kartik\widgets\Select2;
         'presetDropdown' => true,
         'pluginOptions' => [
             'locale' => [
-                'format' => 'd/M/Y',
+                'format' => 'd M Y',
                 //  'prefix' => 'Published Between ',
                 'separator' => ' to ',
             ],

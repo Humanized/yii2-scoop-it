@@ -72,6 +72,7 @@ class Client extends \GuzzleHttp\Client
     public function getTopics($filerOutput = FALSE)
     {
         $raw = $this->get('company/topics');
+
         $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topics;
         if ($filerOutput == TRUE) {
             $getDataFn = $this->getTopicFilter();
@@ -93,11 +94,13 @@ class Client extends \GuzzleHttp\Client
 
     public function getTopicFilter()
     {
+
         $filter = function($topic) {
             return true;
         };
         $isSetFilter = isset(Yii::$app->params['scoopit']['topicOptions']) && isset(Yii::$app->params['scoopit']['topicOptions']['importFilter']);
         if ($isSetFilter) {
+
             $filter = Yii::$app->params['scoopit']['topicOptions']['importFilter'];
         }
         $importTopic = function($topic) use ($filter) {
