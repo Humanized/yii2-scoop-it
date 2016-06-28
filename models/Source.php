@@ -110,7 +110,7 @@ class Source extends \yii\db\ActiveRecord
      */
     public function getKeywords()
     {
-        return $this->hasMany(Keyword::className(), ['id' => 'keyword_id'])->viaTable('source_keyword', ['source_id' => 'id']);
+        return $this->hasMany(Keyword::className(), ['id' => 'keyword_id'])->viaTable('scoopit_source_keyword', ['source_id' => 'id']);
     }
 
     /**

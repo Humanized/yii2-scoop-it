@@ -51,6 +51,22 @@ class Scoop extends \yii\db\ActiveRecord
     /**
      * @return \yii\db\ActiveQuery
      */
+    public function getScoopTags()
+    {
+        return $this->hasMany(ScoopTag::className(), ['scoop_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getTags()
+    {
+        return $this->hasMany(Tag::className(), ['id' => 'tag_id'])->viaTable('scoopit_scoop_tag', ['scoop_id' => 'id']);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
     public function getSource()
     {
         return $this->hasOne(Source::className(), ['id' => 'id']);

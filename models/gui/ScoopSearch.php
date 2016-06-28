@@ -17,7 +17,14 @@ class ScoopSearch extends Scoop
     public $keywords = [];
     public $topicId = NULL;
     public $date_range_from;
-    public $date_range_to;
+    public $date_range_start;
+    public $date_range_stop;
+    private $_query;
+    private $_keywordTables = [
+        't' => ['scoopit_scoop_tag', 'tag_id'],
+        'k' => ['scoopit_source_keyword', 'keyword_id']
+    ];
+    private $_keywordFilters = [];
 
     /**
      * @inheritdoc
@@ -26,8 +33,8 @@ class ScoopSearch extends Scoop
     {
         return [
             [['id'], 'integer'],
-            [['date_range_from','date_range_to'], 'date'],
-            [['title', 'date_range_from', 'date_range_to', 'keywords'], 'safe'],
+            [['date_range_start', 'date_range_stop'], 'date'],
+            [['title', 'date_range_start', 'date_range_stop', 'keywords'], 'safe'],
         ];
     }
 
@@ -49,20 +56,25 @@ class ScoopSearch extends Scoop
      */
     public function search($params)
     {
-        $query = Scoop::find()->joinWith('source');
+        //Join with source keywords and scoop tags
+        $this->_query = Scoop::find()->groupBy('scoopit_scoop.id')
+                ->joinWith('tags')
+                ->joinWith('source')
+                ->joinWith('source.keywords')
+        ;
+
         if (isset($this->topicId)) {
-            $query->joinWith('source.topics');
-            $query->andWhere(['scoopit_source_topic.topic_id' => $this->topicId]);
+            $this->_query->joinWith('source.topics');
+            $this->_query->andWhere(['scoopit_source_topic.topic_id' => $this->topicId]);
         }
 
 
         // add conditions that should always apply here
 
         $dataProvider = new ActiveDataProvider([
-            'query' => $query,
+            'query' => $this->_query,
         ]);
         $dataProvider->pagination->pageSize = 3;
-
         $this->load($params);
 
         if (!$this->validate()) {
@@ -70,17 +82,64 @@ class ScoopSearch extends Scoop
             // $query->where('0=1');
             return $dataProvider;
         }
+        $this->applyFilters();
+        $this->_query->orderBy('date_published');
+        return $dataProvider;
+    }
 
-        $query->andFilterWhere(['LIKE', 'scoopit_source.title', $this->title]);
+    private function applyFilters()
+    {
+        $this->applyKeywordFilters();
 
+        $this->_query->andFilterWhere(['LIKE', 'scoopit_source.title', $this->title]);
         // grid filtering conditions
-        $query->andFilterWhere([
+        $this->_query->andFilterWhere([
             'date_published' => $this->date_published,
         ]);
+    }
 
-        $query->orderBy('date_published');
+    protected function applyKeywordFilters()
+    {
+        //Do nothing when empty
+        if (empty($this->keywords)) {
+            return;
+        }
+        //Else process keywords through single character prefix
 
-        return $dataProvider;
+        foreach ($this->keywords as $keyword) {
+            //Setup keywordFilters array
+            $this->processKeyword($keyword);
+        }
+
+
+
+        $filter = null;
+
+        if (count($this->_keywordFilters) > 1) {
+            $filter = ['OR'];
+        }
+
+        foreach ($this->_keywordFilters as $prefix => $keywords) {
+            $tableData = $this->_keywordTables[$prefix];
+            $condition = ['IN', $tableData[0] . '.' . $tableData[1], $keywords];
+            if (is_array($filter)) {
+                $filter[] = $condition;
+            }
+            if (!is_array($filter)) {
+                $filter = $condition;
+            }
+        }
+        $this->_query->andFilterWhere($filter);
+    }
+
+    protected function processKeyword($keyword)
+    {
+        $prefix = substr($keyword, 0, 1);
+        $id = substr($keyword, 1);
+        if (!isset($this->_keywordFilters[$prefix])) {
+            $this->_keywordFilters[$prefix] = [];
+        }
+        $this->_keywordFilters[$prefix][] = $id;
     }
 
 }

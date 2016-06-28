@@ -32,6 +32,7 @@ class SearchLabel extends Model
     {
         $model = new self($config);
         $query = $model->_getTagQuery()->union($model->_getKeywordQuery());
+
         $custom = $model->_getCustomQuery();
         if (isset($custom)) {
             $query->union($custom);
@@ -41,12 +42,12 @@ class SearchLabel extends Model
 
     private function _getTagQuery()
     {
-        return Tag::find();
+        return Tag::find()->select(['id' => 'CONCAT("t",id)', 'name']);
     }
 
     private function _getKeywordQuery()
     {
-        return Keyword::find();
+        return Keyword::find()->select(['id' => 'CONCAT("k",id)', 'name']);
     }
 
     protected function _getCustomQuery()
