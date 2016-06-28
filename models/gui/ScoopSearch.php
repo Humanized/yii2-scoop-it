@@ -16,9 +16,8 @@ class ScoopSearch extends Scoop
     public $title;
     public $keywords = [];
     public $topicId = NULL;
-    public $date_range_from;
-    public $date_range_start;
-    public $date_range_stop;
+    public $pub_range_start;
+    public $pub_range_stop;
     private $_query;
     private $_keywordTables = [
         't' => ['scoopit_scoop_tag', 'tag_id'],
@@ -33,8 +32,8 @@ class ScoopSearch extends Scoop
     {
         return [
             [['id'], 'integer'],
-            [['date_range_start', 'date_range_stop'], 'date'],
-            [['title', 'date_range_start', 'date_range_stop', 'keywords'], 'safe'],
+            [['pub_range_start', 'pub_range_stop'], 'date'],
+            [['title', 'pub_range_start', 'pub_range_stop', 'keywords'], 'safe'],
         ];
     }
 
