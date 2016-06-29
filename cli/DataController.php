@@ -75,9 +75,9 @@ class DataController extends Controller
         if (isset($model)) {
             $model->linkTopic($topicId);
 
-            $this->_importTags($item);
             if ($withScoop) {
                 $this->_importScoop($item);
+                $this->_importTags($item);
             }
         }
         return $model->id;
@@ -86,9 +86,11 @@ class DataController extends Controller
     private function _importTags($item)
     {
         $scoop = Scoop::findOne($item->id);
+        echo 'party' . "\n";
         if (isset($scoop)) {
+            $this->_initPostProcessor('afterScoopTag', $scoop, 'tagPostProcessor');
             foreach ($item->tags as $tag) {
-                $this->stdout($tag . "\n");
+                $this->stdout("linking scoop to $tag \n");
                 $model = Tag::findOne(['name' => $tag]);
                 if (!isset($model)) {
                     $model = new Tag(['name' => $tag]);
@@ -99,15 +101,21 @@ class DataController extends Controller
         }
     }
 
+    private function _initPostProcessor($fnName, $model, $postProcessor)
+    {
+        if (isset($this->module->params['postProcessorClass']) && method_exists($this->module->params['postProcessorClass'], $fnName)) {
+
+            $fn = [$this->module->params['postProcessorClass'], $fnName];
+            $model->$postProcessor = $fn;
+        }
+    }
+
     private function _importScoop($item)
     {
         $model = Scoop::findOne($item->id);
         if (!isset($model)) {
             $model = new Scoop();
-            if (isset($this->module->params['postProcessor'])) {
-                echo "setting post-processor \n";
-                $model->postProcessor = $this->module->params['postProcessor'];
-            }
+            $this->_initPostProcessor('afterScoop', $model, 'postProcessor');
             $model->setPostAttributes($item);
             try {
                 if ($model->save()) {

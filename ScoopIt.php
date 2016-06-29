@@ -20,7 +20,7 @@ class ScoopIt extends \yii\base\Module
         if (\Yii::$app instanceof \yii\console\Application) {
             $this->controllerNamespace = 'humanized\scoopit\cli';
             if (isset($this->postProcessorClass)) {
-                $this->params['postProcessor'] = [$this->postProcessorClass, 'run'];
+                $this->params['postProcessorClass'] = $this->postProcessorClass;
             }
         }
     }

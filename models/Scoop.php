@@ -18,6 +18,7 @@ class Scoop extends \yii\db\ActiveRecord
 {
 
     public $postProcessor = null;
+    public $tagPostProcessor = null;
     public $postProcessing = false;
 
     /**
@@ -117,7 +118,12 @@ class Scoop extends \yii\db\ActiveRecord
             }
             $tagId = $model->id;
         }
-        $model = new ScoopTag(['topic_id' => $this->id, 'tag_id' => $tagId]);
+        $model = new ScoopTag(['scoop_id' => $this->id, 'tag_id' => $tagId]);
+
+        if (isset($this->tagPostProcessor)) {
+            echo 'haha';
+            $model->postProcessor = $this->tagPostProcessor;
+        }
         try {
             if ($model->save()) {
                 if (php_sapi_name() == "cli") {
@@ -133,9 +139,9 @@ class Scoop extends \yii\db\ActiveRecord
 
     public function afterSave($insert, $changedAttributes)
     {
-        if (isset($this->postProcessor)&&!$this->postProcessing) {
-            var_dump($this->postProcessor);
-            echo 'attempting to call post-processor ';
+        if (isset($this->postProcessor) && !$this->postProcessing) {
+
+
             $postprocess = $this->postProcessor;
             $postprocess($this, $insert, $changedAttributes);
         }

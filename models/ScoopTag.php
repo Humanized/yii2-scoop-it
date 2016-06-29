@@ -3,6 +3,8 @@
 namespace humanized\scoopit\models;
 
 use Yii;
+use humanized\scoopit\models\Tag;
+use humanized\scoopit\models\Scoop;
 
 /**
  * This is the model class for table "scoopit_scoop_tag".
@@ -15,6 +17,9 @@ use Yii;
  */
 class ScoopTag extends \yii\db\ActiveRecord
 {
+
+    public $postProcessor = null;
+    public $postProcessing = false;
 
     /**
      * @inheritdoc
@@ -32,8 +37,8 @@ class ScoopTag extends \yii\db\ActiveRecord
         return [
             [['scoop_id', 'tag_id'], 'required'],
             [['scoop_id', 'tag_id'], 'integer'],
-            [['scoop_id'], 'exist', 'skipOnError' => true, 'targetClass' => ScoopitScoop::className(), 'targetAttribute' => ['scoop_id' => 'id']],
-            [['tag_id'], 'exist', 'skipOnError' => true, 'targetClass' => ScoopitTag::className(), 'targetAttribute' => ['tag_id' => 'id']],
+            [['scoop_id'], 'exist', 'skipOnError' => true, 'targetClass' => Scoop::className(), 'targetAttribute' => ['scoop_id' => 'id']],
+            [['tag_id'], 'exist', 'skipOnError' => true, 'targetClass' => Tag::className(), 'targetAttribute' => ['tag_id' => 'id']],
         ];
     }
 
@@ -53,7 +58,7 @@ class ScoopTag extends \yii\db\ActiveRecord
      */
     public function getScoop()
     {
-        return $this->hasOne(ScoopitScoop::className(), ['id' => 'scoop_id']);
+        return $this->hasOne(Scoop::className(), ['id' => 'scoop_id']);
     }
 
     /**
@@ -61,7 +66,18 @@ class ScoopTag extends \yii\db\ActiveRecord
      */
     public function getTag()
     {
-        return $this->hasOne(ScoopitTag::className(), ['id' => 'tag_id']);
+        return $this->hasOne(Tag::className(), ['id' => 'tag_id']);
+    }
+
+    public function afterSave($insert, $changedAttributes)
+    {
+
+        if (isset($this->postProcessor) && !$this->postProcessing) {
+            $postprocess = $this->postProcessor;
+            $postprocess($this, $insert, $changedAttributes);
+        }
+
+        return parent::afterSave($insert, $changedAttributes);
     }
 
 }
