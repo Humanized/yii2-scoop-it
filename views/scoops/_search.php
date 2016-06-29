@@ -32,19 +32,45 @@ use kartik\widgets\Select2;
             'minimumInputLength' => 2,
         ],
     ]);
+
     echo DateRangePicker::widget([
         'model' => $model,
         'attribute' => 'date_published',
-        'startAttribute' => 'datetime_min',
-        'endAttribute' => 'datetime_max',
         'convertFormat' => true,
-        'locale' => [
-            'format' => 'd M Y',
+        'presetDropdown' => true,
+        'startAttribute' => 'pub_range_start',
+        'endAttribute' => 'pub_range_stop',
+        //'useWithAddon' => true,
+        //  'presetDropdown' => true,
+        // 'options' => ['class' => 'drp-container form-group'],
+        'pluginOptions' => [
+            'locale' => [
+                'format' => 'd F Y',
             //  'prefix' => 'Published Between ',
-            'separator' => ' to ',
+            //   'separator' => ' to ',
+            ],
+            'opens' => 'left'
         ],
-            ]
-    );
+    ]);
+    /*
+      echo $form->field($model, 'date_published', [
+      'addon' => ['prepend' => ['content' => '<i class="glyphicon glyphicon-calendar"></i>']],
+      'options' => ['class' => 'drp-container form-group']
+      ])->widget(DateRangePicker::classname(), [
+      'useWithAddon' => true,
+      'presetDropdown' => true,
+      'pluginOptions' => [
+      'locale' => [
+      'format' => 'd M Y',
+      //  'prefix' => 'Published Between ',
+      'separator' => ' to ',
+      ],
+      'opens' => 'left'
+      ],
+      'convertFormat' => true,
+      ]);
+     * 
+     */
     ?>
 
     <div class="form-group">

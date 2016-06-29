@@ -16,8 +16,8 @@ class ScoopSearch extends Scoop
     public $title;
     public $keywords = [];
     public $topicId = NULL;
-    public $pub_range_start;
-    public $pub_range_stop;
+    public $pub_range_start = NULL;
+    public $pub_range_stop = NULL;
     private $_query;
     private $_keywordTables = [
         't' => ['scoopit_scoop_tag', 'tag_id'],
@@ -55,6 +55,25 @@ class ScoopSearch extends Scoop
      */
     public function search($params)
     {
+
+        $this->_initQuery();
+        // add conditions that should always apply here
+        $dataProvider = new ActiveDataProvider([
+            'query' => $this->_query,
+        ]);
+        $dataProvider->pagination->pageSize = 3;
+        $this->load($params);
+
+        if (!$this->validate()) {
+            return $dataProvider;
+        }
+        $this->_applyFilters();
+        $this->_query->orderBy('date_published DESC');
+        return $dataProvider;
+    }
+
+    private function _initQuery()
+    {
         //Join with source keywords and scoop tags
         $this->_query = Scoop::find()->groupBy('scoopit_scoop.id')
                 ->joinWith('tags')
@@ -66,28 +85,11 @@ class ScoopSearch extends Scoop
             $this->_query->joinWith('source.topics');
             $this->_query->andWhere(['scoopit_source_topic.topic_id' => $this->topicId]);
         }
-
-
-        // add conditions that should always apply here
-
-        $dataProvider = new ActiveDataProvider([
-            'query' => $this->_query,
-        ]);
-        $dataProvider->pagination->pageSize = 3;
-        $this->load($params);
-
-        if (!$this->validate()) {
-            // uncomment the following line if you do not want to return any records when validation fails
-            // $query->where('0=1');
-            return $dataProvider;
-        }
-        $this->applyFilters();
-        $this->_query->orderBy('date_published');
-        return $dataProvider;
     }
 
-    private function applyFilters()
+    private function _applyFilters()
     {
+        $this->_applyDateRangeFilters();
         $this->applyKeywordFilters();
 
         $this->_query->andFilterWhere(['LIKE', 'scoopit_source.title', $this->title]);
@@ -95,6 +97,26 @@ class ScoopSearch extends Scoop
         $this->_query->andFilterWhere([
             'date_published' => $this->date_published,
         ]);
+    }
+
+    private function _applyDateRangeFilters()
+    {
+        if (isset($this->pub_range_start)) {
+            $this->pub_range_start = date('U', strtotime($this->pub_range_start . ' 0:00:00'));
+        }
+
+        if (isset($this->pub_range_stop)) {
+            $this->pub_range_stop = date('U', strtotime($this->pub_range_stop . ' 23:59:00'));
+        }
+        $this->_query->andFilterWhere(['BETWEEN', 'date_published', $this->pub_range_start, $this->pub_range_stop]);
+        // $this->_query->andFilterWhere(['BETWEEN', 'date_published', '2016-06-29', '2016-06-29']);
+
+        if (isset($this->pub_range_start)) {
+            $this->pub_range_start = date('d F Y', $this->pub_range_start);
+        }
+        if (isset($this->pub_range_stop)) {
+            $this->pub_range_stop = date('d F Y', $this->pub_range_stop);
+        }
     }
 
     protected function applyKeywordFilters()

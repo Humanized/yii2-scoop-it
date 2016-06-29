@@ -104,6 +104,10 @@ class DataController extends Controller
         $model = Scoop::findOne($item->id);
         if (!isset($model)) {
             $model = new Scoop();
+            if (isset($this->module->params['postProcessor'])) {
+                echo "setting post-processor \n";
+                $model->postProcessor = $this->module->params['postProcessor'];
+            }
             $model->setPostAttributes($item);
             try {
                 if ($model->save()) {

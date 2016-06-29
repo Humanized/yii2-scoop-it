@@ -10,12 +10,15 @@ use Yii;
  * @property integer $id
  * @property integer $date_published
  *
- * @property Source $id0
+ * @property Source $source
  * @property ScoopTopic[] $scoopitScoopTopics
  * @property Topic[] $topics
  */
 class Scoop extends \yii\db\ActiveRecord
 {
+
+    public $postProcessor = null;
+    public $postProcessing = false;
 
     /**
      * @inheritdoc
@@ -126,6 +129,18 @@ class Scoop extends \yii\db\ActiveRecord
         }
 
         return true;
+    }
+
+    public function afterSave($insert, $changedAttributes)
+    {
+        if (isset($this->postProcessor)&&!$this->postProcessing) {
+            var_dump($this->postProcessor);
+            echo 'attempting to call post-processor ';
+            $postprocess = $this->postProcessor;
+            $postprocess($this, $insert, $changedAttributes);
+        }
+
+        return parent::afterSave($insert, $changedAttributes);
     }
 
 }

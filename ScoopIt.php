@@ -12,13 +12,17 @@ namespace humanized\scoopit;
 class ScoopIt extends \yii\base\Module
 {
 
+    public $postProcessorClass;
+
     public function init()
     {
         parent::init();
         if (\Yii::$app instanceof \yii\console\Application) {
             $this->controllerNamespace = 'humanized\scoopit\cli';
+            if (isset($this->postProcessorClass)) {
+                $this->params['postProcessor'] = [$this->postProcessorClass, 'run'];
+            }
         }
-    
     }
 
 }

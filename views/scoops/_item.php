@@ -17,7 +17,7 @@ use kartik\helpers\Html;
             <h4><?= $model->source->title ?></h4>
             <i><b>Published On: </b> <?= date('d M Y H:i:s', $model->date_published) . "\n" ?></i>
             <p><?= $model->source->description_html ?></p>
-            <p><a class="btn btn-primary" href="<?= $model->source->url ?>"<" role="button">Read More</a>
+            <p><a class="btn btn-primary" target="_blank" href="<?= $model->source->url ?>"<"role="button">Read More</a>
         </div>
     </div>
 </div>
