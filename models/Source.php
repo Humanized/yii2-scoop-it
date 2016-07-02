@@ -160,4 +160,14 @@ class Source extends \yii\db\ActiveRecord
         }
     }
 
+    public function hasTopic($topicId)
+    {
+        foreach ($this->topics as $topic) {
+            if ($topic->id == $topicId) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

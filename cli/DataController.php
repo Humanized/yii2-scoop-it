@@ -86,11 +86,10 @@ class DataController extends Controller
     private function _importTags($item)
     {
         $scoop = Scoop::findOne($item->id);
-        echo 'party' . "\n";
         if (isset($scoop)) {
             $this->_initPostProcessor('afterScoopTag', $scoop, 'tagPostProcessor');
             foreach ($item->tags as $tag) {
-                $this->stdout("linking scoop to $tag \n");
+                //$this->stdout("linking scoop to $tag \n");
                 $model = Tag::findOne(['name' => $tag]);
                 if (!isset($model)) {
                     $model = new Tag(['name' => $tag]);
@@ -104,7 +103,6 @@ class DataController extends Controller
     private function _initPostProcessor($fnName, $model, $postProcessor)
     {
         if (isset($this->module->params['postProcessorClass']) && method_exists($this->module->params['postProcessorClass'], $fnName)) {
-
             $fn = [$this->module->params['postProcessorClass'], $fnName];
             $model->$postProcessor = $fn;
         }

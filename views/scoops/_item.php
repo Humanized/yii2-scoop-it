@@ -11,7 +11,7 @@ use kartik\helpers\Html;
 <div class ="well">
     <div class ="row">
         <div class="col-md-4">
-            <?= Html::img($model->source->image_medium); ?>
+            <?= Html::img($model->source->image_large, ['width' => '200px', 'height' => '150px']); ?>
         </div>
         <div class="col-md-8">
             <h2><?= $model->source->title ?></h2>
@@ -19,7 +19,8 @@ use kartik\helpers\Html;
             <p><?= $model->source->description_raw ?></p>
             <div class="news-item-button">
                 <a class="btn btn-primary" target="_blank" href="<?= $model->source->url ?>"<"role="button">Read More</a>
-     
+                <?= call_user_func($buttonCallback, $model) ?>
+
             </div>
         </div>
     </div>

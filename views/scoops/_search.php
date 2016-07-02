@@ -40,15 +40,13 @@ use kartik\widgets\Select2;
         'presetDropdown' => true,
         'startAttribute' => 'pub_range_start',
         'endAttribute' => 'pub_range_stop',
-        //'useWithAddon' => true,
-        //  'presetDropdown' => true,
-        // 'options' => ['class' => 'drp-container form-group'],
         'pluginOptions' => [
             'locale' => [
                 'format' => 'd F Y',
             //  'prefix' => 'Published Between ',
             //   'separator' => ' to ',
             ],
+            'addon' => ['prepend' => ['content' => '<i class="glyphicon glyphicon-calendar"></i>']],
             'opens' => 'left'
         ],
     ]);

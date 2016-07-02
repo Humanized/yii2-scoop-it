@@ -32,6 +32,7 @@ class ScoopSearch extends Scoop
     {
         return [
             [['id'], 'integer'],
+            [['pub_range_start', 'pub_range_stop'], 'default', 'value' => NULL],
             [['pub_range_start', 'pub_range_stop'], 'date'],
             [['title', 'pub_range_start', 'pub_range_stop', 'keywords'], 'safe'],
         ];
