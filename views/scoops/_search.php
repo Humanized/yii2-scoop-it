@@ -35,19 +35,21 @@ use kartik\widgets\Select2;
 
     echo DateRangePicker::widget([
         'model' => $model,
+        //  'options' => ['placeholder' => 'party'],
         'attribute' => 'date_published',
         'convertFormat' => true,
         'presetDropdown' => true,
         'startAttribute' => 'pub_range_start',
         'endAttribute' => 'pub_range_stop',
         'pluginOptions' => [
+            'autoUpdateInput' => false,
             'locale' => [
                 'format' => 'd F Y',
             //  'prefix' => 'Published Between ',
             //   'separator' => ' to ',
             ],
             'addon' => ['prepend' => ['content' => '<i class="glyphicon glyphicon-calendar"></i>']],
-            'opens' => 'left'
+            'opens' => 'right'
         ],
     ]);
     /*

@@ -8,8 +8,6 @@ use yii\widgets\Pjax;
 /* @var $dataProvider yii\data\ActiveDataProvider */
 ?>
 
-<?php echo $this->render('_search', ['model' => $model]); ?>
-
 
 <?php Pjax::begin(['id' => 'news-list']); ?>    <?=
 
