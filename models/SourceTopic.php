@@ -16,6 +16,9 @@ use Yii;
 class SourceTopic extends \yii\db\ActiveRecord
 {
 
+    public $postProcessor = null;
+    public $postProcessing = false;
+
     /**
      * @inheritdoc
      */
@@ -62,6 +65,17 @@ class SourceTopic extends \yii\db\ActiveRecord
     public function getTopic()
     {
         return $this->hasOne(Topic::className(), ['id' => 'topic_id']);
+    }
+
+    public function afterSave($insert, $changedAttributes)
+    {
+
+        if (isset($this->postProcessor) && !$this->postProcessing) {
+            $postprocess = $this->postProcessor;
+            $postprocess($this, $insert, $changedAttributes);
+        }
+
+        return parent::afterSave($insert, $changedAttributes);
     }
 
 }

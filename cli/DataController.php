@@ -15,6 +15,7 @@ use yii\helpers\VarDumper;
 use \humanized\scoopit\models\Source;
 use \humanized\scoopit\models\Scoop;
 use \humanized\scoopit\models\Tag;
+use yii\helpers\Console;
 
 /**
  * A CLI port of the Yii2 RBAC Manager Interface.
@@ -28,6 +29,11 @@ use \humanized\scoopit\models\Tag;
  */
 class DataController extends Controller
 {
+
+    public function actionDropAll()
+    {
+        Source::deleteAll('1=1');
+    }
 
     public function actionIndex($lastUpdate)
     {
@@ -47,7 +53,6 @@ class DataController extends Controller
             return 1;
         }
         $client = new Client();
-
         $scoops = $client->getScoops($topicId);
         foreach ($scoops as $scoop) {
             $this->_import($scoop, $topicId, TRUE);
@@ -59,21 +64,26 @@ class DataController extends Controller
 
     private function _import($item, $topicId, $withScoop = FALSE)
     {
+        $this->stdout("\nProcessing Source: ");
+        $this->stdout($item->url . "\n", Console::FG_GREEN, Console::BOLD);
         $model = Source::findOne($item->id);
         if (!isset($model)) {
             $model = new Source();
             $model->setPostAttributes($item);
             try {
-                if ($model->save()) {
-                    $this->stdout('New Scoop.it Meta Imported' . "\n");
-                }
+                $model->save();
             } catch (\Exception $ex) {
                 
             }
         }
 
         if (isset($model)) {
-            $model->linkTopic($topicId);
+            $this->_initPostProcessor('afterTopicLink', $model, 'topicPostProcessor');
+            $topicData = $model->linkTopic($topicId);
+            $topic = $topicData[1];
+            $this->stdout((!$topicData[0] ? 'Already ' : '') . 'Linked to topic: ', (!$topicData[0] ? Console::FG_RED : Console::FG_GREEN), Console::BOLD);
+            $this->stdout($topic->name . "\n");
+
 
             if ($withScoop) {
                 $this->_importScoop($item);
@@ -89,7 +99,7 @@ class DataController extends Controller
         if (isset($scoop)) {
             $this->_initPostProcessor('afterScoopTag', $scoop, 'tagPostProcessor');
             foreach ($item->tags as $tag) {
-                //$this->stdout("linking scoop to $tag \n");
+
                 $model = Tag::findOne(['name' => $tag]);
                 if (!isset($model)) {
                     $model = new Tag(['name' => $tag]);

@@ -121,7 +121,6 @@ class Scoop extends \yii\db\ActiveRecord
         $model = new ScoopTag(['scoop_id' => $this->id, 'tag_id' => $tagId]);
 
         if (isset($this->tagPostProcessor)) {
-            echo 'haha';
             $model->postProcessor = $this->tagPostProcessor;
         }
         try {

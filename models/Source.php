@@ -28,6 +28,8 @@ use Yii;
 class Source extends \yii\db\ActiveRecord
 {
 
+    public $topicPostProcessor = null;
+
     /**
      * @inheritdoc
      */
@@ -144,20 +146,23 @@ class Source extends \yii\db\ActiveRecord
 
     public function linkTopic($topicId)
     {
+
         $topic = Topic::findOne($topicId);
         if (!isset($topic)) {
             return false;
         }
+
+        $out = [true, $topic];
         try {
             $model = new SourceTopic(['topic_id' => $topicId, 'source_id' => $this->id]);
-            if ($model->save()) {
-                if (php_sapi_name() == "cli") {
-                    echo 'New Topic linked to Source' . "\n";
-                }
+            if (isset($this->topicPostProcessor)) {
+                $model->postProcessor = $this->topicPostProcessor;
             }
+            $out[0] = $model->save();
         } catch (\Exception $ex) {
-            
+            $out[0] = false;
         }
+        return $out;
     }
 
     public function hasTopic($topicId)
