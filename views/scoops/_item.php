@@ -11,7 +11,7 @@ use kartik\helpers\Html;
 <div class ="well">
     <div class ="row">
         <div class="col-md-4">
-            <?= Html::img($model->source->image_large, ['width' => '200px', 'height' => '150px']); ?>
+            <?= Html::img($model->source->image_medium, []); ?>
         </div>
         <div class="col-md-8">
             <h2><?= $model->source->title ?></h2>

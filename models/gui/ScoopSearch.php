@@ -34,7 +34,7 @@ class ScoopSearch extends Scoop
             [['id'], 'integer'],
             [['pub_range_start', 'pub_range_stop'], 'default', 'value' => NULL],
             [['pub_range_start', 'pub_range_stop'], 'date'],
-            [['title', 'pub_range_start', 'pub_range_stop', 'keywords'], 'safe'],
+            [['title', 'date_published', 'pub_range_start', 'pub_range_stop', 'keywords'], 'safe'],
         ];
     }
 
@@ -92,32 +92,20 @@ class ScoopSearch extends Scoop
     {
         $this->_applyDateRangeFilters();
         $this->applyKeywordFilters();
-
         $this->_query->andFilterWhere(['LIKE', 'scoopit_source.title', $this->title]);
-        // grid filtering conditions
-        $this->_query->andFilterWhere([
-            'date_published' => $this->date_published,
-        ]);
+      
     }
 
     private function _applyDateRangeFilters()
     {
-        if (isset($this->pub_range_start)) {
-            $this->pub_range_start = date('U', strtotime($this->pub_range_start . ' 0:00:00'));
+        if ($this->date_published == " to ") {
+            return;
         }
-
-        if (isset($this->pub_range_stop)) {
-            $this->pub_range_stop = date('U', strtotime($this->pub_range_stop . ' 23:59:00'));
-        }
+        $pos = strpos($this->date_published, ' to ');
+        $this->pub_range_start = date('U', strtotime(substr($this->date_published, 0, $pos) . ' 0:00:00'));
+        $this->pub_range_stop = date('U', strtotime(substr($this->date_published, $pos + 4) . ' 23:59:00'));
         $this->_query->andFilterWhere(['BETWEEN', 'date_published', $this->pub_range_start, $this->pub_range_stop]);
         // $this->_query->andFilterWhere(['BETWEEN', 'date_published', '2016-06-29', '2016-06-29']);
-
-        if (isset($this->pub_range_start)) {
-            $this->pub_range_start = date('d F Y', $this->pub_range_start);
-        }
-        if (isset($this->pub_range_stop)) {
-            $this->pub_range_stop = date('d F Y', $this->pub_range_stop);
-        }
     }
 
     protected function applyKeywordFilters()
