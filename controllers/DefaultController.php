@@ -28,4 +28,12 @@ class DefaultController extends Controller
         ]);
     }
 
+    public function actionOauthCallback($oauth_token, $oauth_verifier)
+    {
+        // echo $oauthToken;
+        return $this->render('/authentication/index', [
+                    't' => $oauth_token, 'v' => $oauth_verifier
+        ]);
+    }
+
 }

@@ -15,6 +15,12 @@ use GuzzleHttp\Subscriber\Oauth\Oauth1;
 class Client extends \GuzzleHttp\Client
 {
 
+    public $_requestTokenParams = [];
+    public $_accessTokenParams = [];
+    public $_authorizationResponse = NULL;
+    public $_stack;
+    private $_middlewareConfig = [];
+
     /**
      * The c
      * 
@@ -22,31 +28,73 @@ class Client extends \GuzzleHttp\Client
      */
     public function __construct(array $config = array())
     {
-        $config = Yii::$app->params['scoopit'];
-        if (!isset($config)) {
-            throw new \yii\base\InvalidConfigException("Accessible params array missing index viajero");
-        }
-        if (!isset($config['remoteUri'])) {
-            throw new \yii\base\InvalidConfigException("Viajero remote configuration missing the remoteUri parameter");
-        }
-        if (!isset($config['remoteConsumerKey'])) {
-            throw new \yii\base\InvalidConfigException("Viajero remote configuration missing the remoteAccessToken parameter");
-        }
-        if (!isset($config['remoteSecretKey'])) {
-            throw new \yii\base\InvalidConfigException("Viajero remote configuration missing the remoteAccessToken parameter");
-        }
-        $stack = HandlerStack::create();
-        $middleware = new Oauth1([
-            'consumer_key' => Yii::$app->params['scoopit']['remoteConsumerKey'],
-            'consumer_secret' => Yii::$app->params['scoopit']['remoteSecretKey'],
-            'token_secret' => '',
-        ]);
-        $stack->push($middleware);
+
+        $this->_initConfig();
+        $this->_stack = HandlerStack::create();
+        $this->_middlewareConfig = [
+            'consumer_key' => Yii::$app->params['scoopit']['consumerKey'],
+            'consumer_secret' => Yii::$app->params['scoopit']['consumerSecret'],
+            'token' => Yii::$app->params['scoopit']['token'],
+            'token_secret' => Yii::$app->params['scoopit']['tokenSecret']
+        ];
+        $this->_initStack();
         parent::__construct([
             'base_uri' => Yii::$app->params['scoopit']['remoteUri'],
-            'handler' => $stack,
+            'handler' => &$this->_stack,
             'auth' => 'oauth'
         ]);
+    }
+
+    private function _initConfig()
+    {
+        $config = Yii::$app->params['scoopit'];
+        if (!isset($config)) {
+            throw new \yii\base\InvalidConfigException("Accessible params array missing index scoopit");
+        }
+        if (!isset($config['remoteUri'])) {
+            throw new \yii\base\InvalidConfigException("Scoop.it remote configuration missing the remoteUri parameter");
+        }
+        if (!isset($config['consumerKey'])) {
+            throw new \yii\base\InvalidConfigException("Scoop.it remote configuration missing the consumerKey parameter");
+        }
+        if (!isset($config['consumerSecret'])) {
+            throw new \yii\base\InvalidConfigException("Scoop.it remote configuration missing the consumerSecret parameter");
+        }
+    }
+
+    private function _initStack()
+    {
+        $middleware = new Oauth1($this->_middlewareConfig);
+        $this->_stack->push($middleware);
+    }
+
+    private function _processTokenRequestResponse()
+    {
+        $this->_requestTokenParams = [];
+        $requestTokenResponse = $this->post('/oauth/request')->getBody()->getContents();
+
+        foreach (explode('&', $requestTokenResponse) as $queryString) {
+            $q = explode('=', $queryString);
+            if ($q[0] == "oauth_token") {
+                $this->_appendTokenMiddlewareConfig("token", $q[1]);
+            }
+            if ($q[0] == "oauth_token_secret") {
+                $this->_appendTokenMiddleWareConfig("token_secret", $q[1]);
+            }
+        }
+    }
+
+    private function _appendTokenMiddlewareConfig($attrib, $value)
+    {
+        $this->_middlewareConfig[$attrib] = $value;
+    }
+
+    public function getRawSource($topicId, $lastUpdate = 0)
+    {
+        $raw = $this->get('api/1/topic', ['query' => ['since' => time() - (60 * 60 * $lastUpdate), 'id' => $topicId]
+        ]);
+        $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
+        return $out;
     }
 
     public function getSources($topicId, $lastUpdate = 0)
@@ -63,7 +111,7 @@ class Client extends \GuzzleHttp\Client
 
     public function _getSources($var, $topicId, $lastUpdate)
     {
-        $raw = $this->get('topic', ['query' => ['since' => time() - (60 * 60 * $lastUpdate), 'curable' => 50, 'curablePage' => 50, 'id' => $topicId]
+        $raw = $this->get('api/1/topic', ['query' => ['since' => time() - (60 * 60 * $lastUpdate), 'curable' => 50, 'curablePage' => 50, 'id' => $topicId]
         ]);
         $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
         return $out->$var;
@@ -71,7 +119,7 @@ class Client extends \GuzzleHttp\Client
 
     public function getTopics($filerOutput = FALSE)
     {
-        $raw = $this->get('company/topics');
+        $raw = $this->get('api/1/company/topics');
 
         $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topics;
         if ($filerOutput == TRUE) {
@@ -83,7 +131,7 @@ class Client extends \GuzzleHttp\Client
 
     public function getTopicKeywords($topicId, $filerOutput = FALSE)
     {
-        $raw = $this->get('sse', ['query' => [
+        $raw = $this->get('api/1/sse', ['query' => [
                 'topic' => $topicId
         ]]);
 

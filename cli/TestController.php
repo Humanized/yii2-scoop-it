@@ -10,7 +10,11 @@ namespace humanized\scoopit\cli;
 
 use yii\console\Controller;
 use humanized\scoopit\Client;
-
+use GuzzleHttp\Client as GuzzleClient;
+use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Subscriber\Oauth\Oauth1;
+use Yii;
+use yii\helpers\Console;
 
 /**
  * A CLI port of the Yii2 RBAC Manager Interface.
@@ -25,6 +29,11 @@ use humanized\scoopit\Client;
 class TestController extends Controller
 {
 
+    private $_callbackUri;
+    private $_params = [];
+    private $_middlewareConfig = [];
+    private $_authenticationVerifier;
+
     public function actionIndex()
     {
         /**
@@ -37,7 +46,8 @@ class TestController extends Controller
             /**
              * GuzzleHttp\Psr7\Response;
              */
-            $response = $client->get('test');
+            $response = $client->get('api/1/test');
+            var_dump($response->getBody()->getContents());
 
             if ($response->getStatusCode() != 200) {
                 $out = 'Connection Test Failed with code:' . $response->getStatusCode();
