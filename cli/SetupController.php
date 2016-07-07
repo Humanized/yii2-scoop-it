@@ -19,11 +19,11 @@ use humanized\scoopit\models\Keyword;
  * A CLI port of the Yii2 RBAC Manager Interface.
  *
  * 
- * @name RBAC Manager CLI
+ * @name Scoop.it CLI Setup Tool
  * @version 0.1
  * @author Jeffrey Geyssens <jeffrey@humanized.be>
- * @package yii2-rbac
- *
+ * @package yii2-scoop.it
+ * 
  */
 class SetupController extends Controller
 {
@@ -40,7 +40,7 @@ class SetupController extends Controller
         $topicData = $client->getTopics(TRUE);
         $this->stdout('found ' . count($topicData) . ' topics' . "\n");
         foreach ($topicData as $topic) {
-            $this->_syncTopic($topic,$publish);
+            $this->_syncTopic($topic, $publish);
             $this->actionKeywords($topic['id']);
         }
     }
@@ -62,7 +62,7 @@ class SetupController extends Controller
         return 0;
     }
 
-    private function _syncTopic($topic,$publish)
+    private function _syncTopic($topic, $publish)
     {
         $model = Topic::findOne($topic['id']);
         //Create a new model if required
@@ -95,6 +95,32 @@ class SetupController extends Controller
             //Sync names if scoop.it name has changed (existing model only)
         }
         return true;
+    }
+
+    public function actionPool($topicId)
+    {
+        $pool = \humanized\scoopit\models\Topic::findOne(!is_numeric($topicId) ? ['name' => $topicId] : $topicId);
+        if (NULL === $pool) {
+            $this->stderr("setup/pool: No Such Topic! \n");
+            return 1;
+        }
+        if (false === strpos($pool->name, '-pool')) {
+            $this->stderr("setup/pool: Topic not suffixed by -pool! \n");
+            return 2;
+        }
+
+        $master = \humanized\scoopit\models\Topic::findOne(['name' => str_replace('-pool', '', $pool->name)]);
+        if (NULL === $master) {
+            $this->stderr("setup/pool: Pool does not have a master topic! \n");
+            return 3;
+        }
+        $client = new Client();
+        $remoteSources = array_reverse($client->getSources($pool->id, 100));
+        $queryParams = ['action' => 'accept', 'topicId' => $pool->id, 'directLink' => 0];
+        foreach ($remoteSources as $remoteSource) {
+            $queryParams['id'] = $remoteSource->id;
+            $client->post('api/1/post', ['query' => $queryParams]);
+        }
     }
 
 }

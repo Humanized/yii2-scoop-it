@@ -122,6 +122,7 @@ class Source extends \yii\db\ActiveRecord
      */
     public function setPostAttributes($post)
     {
+        echo $post->url;
         $attributes = [
             'id' => $post->id,
             'url' => $post->url,
@@ -146,7 +147,6 @@ class Source extends \yii\db\ActiveRecord
 
     public function linkTopic($topicId)
     {
-
         $topic = Topic::findOne($topicId);
         if (!isset($topic)) {
             return false;
@@ -160,6 +160,7 @@ class Source extends \yii\db\ActiveRecord
             }
             $out[0] = $model->save();
         } catch (\Exception $ex) {
+            echo $ex->getMessage();
             $out[0] = false;
         }
         return $out;

@@ -100,7 +100,7 @@ class Client extends \GuzzleHttp\Client
     public function getSources($topicId, $lastUpdate = 0)
     {
 
-        return $this->_getSources('curatedPosts', $topicId, $lastUpdate);
+        return $this->_getSources('curablePosts', $topicId, $lastUpdate);
     }
 
     public function getScoops($topicId, $lastUpdate = 0)
@@ -111,7 +111,17 @@ class Client extends \GuzzleHttp\Client
 
     public function _getSources($var, $topicId, $lastUpdate)
     {
-        $raw = $this->get('api/1/topic', ['query' => ['since' => time() - (60 * 60 * $lastUpdate), 'curable' => 50, 'curablePage' => 50, 'id' => $topicId]
+
+        $queryParams = [
+            'id' => $topicId,
+            'since' => time() - (60 * 60 * $lastUpdate)
+        ];
+        if ($var == 'curablePosts') {
+            $queryParams['curable'] = 100;
+            $queryParams['curablePage'] = 100;
+        }
+
+        $raw = $this->get('api/1/topic', ['query' => $queryParams
         ]);
         $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
         return $out->$var;

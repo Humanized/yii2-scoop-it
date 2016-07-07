@@ -21,10 +21,10 @@ use yii\helpers\Console;
  * A CLI port of the Yii2 RBAC Manager Interface.
  *
  * 
- * @name RBAC Manager CLI
+ * @name Scoop.it CLI Data Synchronisation Tool
  * @version 0.1
  * @author Jeffrey Geyssens <jeffrey@humanized.be>
- * @package yii2-rbac
+ * @package yii2-scoopit
  *
  */
 class DataController extends Controller
@@ -35,31 +35,65 @@ class DataController extends Controller
         Source::deleteAll('1=1');
     }
 
+    public function peek($topicId, $mode = 1)
+    {
+        $topic = \humanized\scoopit\models\Topic::findOne(!is_numeric($topicId) ? ['name' => $topicId] : $topicId);
+        if (NULL === $topic) {
+            $this->stdout("No Such Topic \n");
+            return 1;
+        }
+        $client = new Client();
+    }
+
     public function actionIndex($lastUpdate)
     {
         $client = new Client();
         $topics = $client->getTopics(TRUE);
         foreach ($topics as $topic) {
-            $this->actionImportTopic($topic['id']);
+            $this->actionSync($topic['id']);
         }
-
         return 0;
     }
 
-    public function actionImportTopic($topicId)
+    /**
+     * 
+     * @param type $topicId
+     * @param type $lastUpdate
+     * @return int
+     */
+    public function actionSync($topicId, $lastUpdate)
     {
-        if (NULL === \humanized\scoopit\models\Topic::findOne($topicId)) {
+        $topic = \humanized\scoopit\models\Topic::findOne(!is_numeric($topicId) ? ['name' => $topicId] : $topicId);
+        if (NULL === $topic) {
             $this->stdout("No Such Topic \n");
             return 1;
         }
         $client = new Client();
-        $scoops = $client->getScoops($topicId);
+        $isPool = !(FALSE === strpos($topic->name, 'pool'));
+
+
+        //Pass #1: Obtain all scoops related to the topic 
+        $scoops = $client->getScoops($topic->id, $lastUpdate);
         foreach ($scoops as $scoop) {
-            $this->_import($scoop, $topicId, TRUE);
+            $this->_import($scoop, $topic->id, TRUE);
         }
 
-
+        //Pass #2: Obtain all sources related to the topic 
+        // $sources = $client->getSources($topic->id, $lastUpdate);
+        /*
+          foreach ($sources as $data) {
+          $source = new Source();
+          $source->setPostAttributes($data);
+          $source->save();
+          }
+         * 
+         */
         return 0;
+    }
+
+    private function _process()
+    {
+        
     }
 
     private function _import($item, $topicId, $withScoop = FALSE)

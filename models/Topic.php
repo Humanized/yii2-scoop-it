@@ -58,17 +58,17 @@ class Topic extends \yii\db\ActiveRecord
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getScoopTopics()
+    public function getSourceTopics()
     {
-        return $this->hasMany(ScoopTopic::className(), ['topic_id' => 'id']);
+        return $this->hasMany(SourceTopic::className(), ['topic_id' => 'id']);
     }
 
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getScoops()
+    public function getSources()
     {
-        return $this->hasMany(Scoop::className(), ['id' => 'scoop_id'])->viaTable('scoopit_scoop_topic', ['topic_id' => 'id']);
+        return $this->hasMany(Scoop::className(), ['id' => 'source_id'])->viaTable('scoopit_source_topic', ['topic_id' => 'id']);
     }
 
     /**
@@ -113,7 +113,6 @@ class Topic extends \yii\db\ActiveRecord
 
     public function linkKeyword($keyword)
     {
-
         $keywordId = $keyword;
         if (!is_numeric($keyword)) {
             $model = Keyword::findOne(['name' => $keyword]);
@@ -132,7 +131,6 @@ class Topic extends \yii\db\ActiveRecord
         } catch (\Exception $ex) {
             
         }
-
         return true;
     }
 
