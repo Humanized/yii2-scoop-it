@@ -74,15 +74,9 @@ class DataController extends Controller
         //Pass #1: Obtain all scoops related to the topic 
         $scoops = $client->getScoops($topic->id, $lastUpdate);
 
-        while (!empty($scoops)) {
-            foreach ($scoops as $scoop) {
-                $this->_import($scoop, $topic->id, TRUE);
-            }
-            $client->incrementPager();
-            $scoops = $client->getScoops($topic->id, $lastUpdate);
+        foreach ($scoops as $scoop) {
+            $this->_import($scoop, $topic->id, TRUE);
         }
-        $client->resetPager();
-
 
         //Pass #2: Obtain all sources related to the topic 
         // $sources = $client->getSources($topic->id, $lastUpdate);

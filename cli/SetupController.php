@@ -117,7 +117,7 @@ class SetupController extends Controller
 
         $client = new Client();
         //Get sources by reverse pubdate
-        $remoteSources = $client->getSources($pool->id, 1);
+        $remoteSources = array_reverse($client->getSources($pool->id, 1));
         $queryParams = ['action' => 'accept', 'topicId' => $pool->id, 'directLink' => 0];
         //Setups first 110 sources (API limitation)
         foreach ($remoteSources as $remoteSource) {

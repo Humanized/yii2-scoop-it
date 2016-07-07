@@ -135,9 +135,9 @@ class Client extends \GuzzleHttp\Client
             $queryParams['curable'] = 150;
             //  echo 'curable-pager-set:' . $this->_pager . "\n";
             $queryParams['curablePage'] = $this->_pager;
-        } elseif ($var == 'curablePosts') {
-            
-            $queryParams['page'] = $this->_pager;
+        } elseif ($var == 'curatedPosts') {
+            $queryParams['curated'] = 150;
+         //   $queryParams['page'] = $this->_pager;
         }
 
 
@@ -146,6 +146,7 @@ class Client extends \GuzzleHttp\Client
         ]);
 
         $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
+        echo 'total post-count to process: ' . $out->curatedPostCount . "\n";
         return $out->$var;
     }
 
