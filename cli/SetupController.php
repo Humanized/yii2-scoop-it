@@ -104,23 +104,31 @@ class SetupController extends Controller
             $this->stderr("setup/pool: No Such Topic! \n");
             return 1;
         }
+
         if (false === strpos($pool->name, '-pool')) {
             $this->stderr("setup/pool: Topic not suffixed by -pool! \n");
             return 2;
         }
-
         $master = \humanized\scoopit\models\Topic::findOne(['name' => str_replace('-pool', '', $pool->name)]);
         if (NULL === $master) {
             $this->stderr("setup/pool: Pool does not have a master topic! \n");
             return 3;
         }
         $client = new Client();
-        $remoteSources = array_reverse($client->getSources($pool->id, 100));
+
+        //Get sources by reverse pubdate
+        $remoteSources = array_reverse($client->getSources($pool->id, 2));
         $queryParams = ['action' => 'accept', 'topicId' => $pool->id, 'directLink' => 0];
-        foreach ($remoteSources as $remoteSource) {
-            $queryParams['id'] = $remoteSource->id;
-            $client->post('api/1/post', ['query' => $queryParams]);
+
+        while (!empty($remoteSources)) {
+            foreach ($remoteSources as $remoteSource) {
+                $queryParams['id'] = $remoteSource->id;
+                $client->post('api/1/post', ['query' => $queryParams]);
+            }
+            $client->incrementPager();
+            $remoteSources = $client->getScoops($topic->id, $lastUpdate);
         }
+        $client->resetPager();
     }
 
 }

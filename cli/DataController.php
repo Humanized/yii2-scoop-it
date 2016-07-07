@@ -71,12 +71,18 @@ class DataController extends Controller
         $client = new Client();
         $isPool = !(FALSE === strpos($topic->name, 'pool'));
 
-
         //Pass #1: Obtain all scoops related to the topic 
         $scoops = $client->getScoops($topic->id, $lastUpdate);
-        foreach ($scoops as $scoop) {
-            $this->_import($scoop, $topic->id, TRUE);
+
+        while (!empty($scoops)) {
+            foreach ($scoops as $scoop) {
+                $this->_import($scoop, $topic->id, TRUE);
+            }
+            $client->incrementPager();
+            $scoops = $client->getScoops($topic->id, $lastUpdate);
         }
+        $client->resetPager();
+
 
         //Pass #2: Obtain all sources related to the topic 
         // $sources = $client->getSources($topic->id, $lastUpdate);

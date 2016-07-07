@@ -20,6 +20,7 @@ class Client extends \GuzzleHttp\Client
     public $_authorizationResponse = NULL;
     public $_stack;
     private $_middlewareConfig = [];
+    private $_pager = 1;
 
     /**
      * The c
@@ -60,6 +61,7 @@ class Client extends \GuzzleHttp\Client
         if (!isset($config['consumerSecret'])) {
             throw new \yii\base\InvalidConfigException("Scoop.it remote configuration missing the consumerSecret parameter");
         }
+        $this->_pager = 1;
     }
 
     private function _initStack()
@@ -89,6 +91,16 @@ class Client extends \GuzzleHttp\Client
         $this->_middlewareConfig[$attrib] = $value;
     }
 
+    public function incrementPager()
+    {
+        $this->_pager++;
+    }
+
+    public function resetPager()
+    {
+        $this->_pager = 1;
+    }
+
     public function getRawSource($topicId, $lastUpdate = 0)
     {
         $raw = $this->get('api/1/topic', ['query' => ['since' => time() - (60 * 60 * $lastUpdate), 'id' => $topicId]
@@ -111,8 +123,8 @@ class Client extends \GuzzleHttp\Client
 
     public function _getSources($var, $topicId, $lastUpdate)
     {
-
         $queryParams = [
+            'page' => $this->_pager,
             'id' => $topicId,
             'since' => time() - (60 * 60 * $lastUpdate)
         ];
