@@ -114,21 +114,16 @@ class SetupController extends Controller
             $this->stderr("setup/pool: Pool does not have a master topic! \n");
             return 3;
         }
+
         $client = new Client();
-
         //Get sources by reverse pubdate
-        $remoteSources = array_reverse($client->getSources($pool->id, 2));
+        $remoteSources = $client->getSources($pool->id, 1);
         $queryParams = ['action' => 'accept', 'topicId' => $pool->id, 'directLink' => 0];
-
-        while (!empty($remoteSources)) {
-            foreach ($remoteSources as $remoteSource) {
-                $queryParams['id'] = $remoteSource->id;
-                $client->post('api/1/post', ['query' => $queryParams]);
-            }
-            $client->incrementPager();
-            $remoteSources = $client->getScoops($topic->id, $lastUpdate);
+        //Setups first 110 sources (API limitation)
+        foreach ($remoteSources as $remoteSource) {
+            $queryParams['id'] = $remoteSource->id;
+            $client->post('api/1/post', ['query' => $queryParams]);
         }
-        $client->resetPager();
     }
 
 }

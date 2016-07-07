@@ -93,12 +93,15 @@ class Client extends \GuzzleHttp\Client
 
     public function incrementPager()
     {
-        $this->_pager++;
+
+        $this->_pager +=1;
+        echo 'pager-set:' . $this->_pager . "\n";
     }
 
     public function resetPager()
     {
         $this->_pager = 1;
+        echo 'pager-set:' . $this->_pager . "\n";
     }
 
     public function getRawSource($topicId, $lastUpdate = 0)
@@ -124,17 +127,24 @@ class Client extends \GuzzleHttp\Client
     public function _getSources($var, $topicId, $lastUpdate)
     {
         $queryParams = [
-            'page' => $this->_pager,
+            // 'page' => $this->_pager,
             'id' => $topicId,
             'since' => time() - (60 * 60 * $lastUpdate)
         ];
         if ($var == 'curablePosts') {
-            $queryParams['curable'] = 100;
-            $queryParams['curablePage'] = 100;
+            $queryParams['curable'] = 150;
+            //  echo 'curable-pager-set:' . $this->_pager . "\n";
+            $queryParams['curablePage'] = $this->_pager;
+        } elseif ($var == 'curablePosts') {
+            
+            $queryParams['page'] = $this->_pager;
         }
 
-        $raw = $this->get('api/1/topic', ['query' => $queryParams
+
+        $raw = $this->get('api/1/topic', [
+            'query' => $queryParams
         ]);
+
         $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
         return $out->$var;
     }

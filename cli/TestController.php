@@ -61,33 +61,4 @@ class TestController extends Controller
         return 0;
     }
 
-    public function actionSyncPools()
-    {
-        $poolTopics = [5907155 => 'nano-regulation-pool'];
-
-
-
-        foreach ($poolTopics as $pool => $poolName) {
-            $masterTopic = \humanized\scoopit\models\Topic::findOne(['name' => str_replace('-pool', '', $poolName)]);
-            $master = $masterTopic->id;
-            $client = new Client();
-            $sources = $client->getSources($pool, 100);
-
-            foreach (array_reverse($sources) as $source) {
-//                $response = $client->post('api/1/post', ['query' => ['action' => 'create', 'resolveUrl' => 'true', 'topicId' => $pool, 'url' => $source->url]]);
-                //              var_dump($response);
-                //            echo "\n";
-            }
-
-            $scoops = $client->getScoops($pool);
-            var_dump($scoops->curatedPosts);
-            //    \yii\helpers\VarDumper::dump($sources);
-        }
-    }
-
-    public function actionDeletePools()
-    {
-        
-    }
-
 }

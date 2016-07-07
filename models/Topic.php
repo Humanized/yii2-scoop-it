@@ -68,7 +68,7 @@ class Topic extends \yii\db\ActiveRecord
      */
     public function getSources()
     {
-        return $this->hasMany(Scoop::className(), ['id' => 'source_id'])->viaTable('scoopit_source_topic', ['topic_id' => 'id']);
+        return $this->hasMany(Source::className(), ['id' => 'source_id'])->viaTable('scoopit_source_topic', ['topic_id' => 'id']);
     }
 
     /**
