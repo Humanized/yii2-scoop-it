@@ -58,7 +58,7 @@ class ScoopSearch extends Scoop
     {
 
         $this->_initQuery();
-        // add conditions that should always apply here
+
         $dataProvider = new ActiveDataProvider([
             'query' => $this->_query,
         ]);
@@ -66,10 +66,15 @@ class ScoopSearch extends Scoop
         $this->load($params);
 
         if (!$this->validate()) {
+
             return $dataProvider;
         }
+
+
+
         $this->_applyFilters();
         $this->_query->orderBy('date_published DESC');
+
         return $dataProvider;
     }
 
@@ -83,6 +88,7 @@ class ScoopSearch extends Scoop
         ;
 
         if (isset($this->topicId)) {
+
             $this->_query->joinWith('source.topics');
             $this->_query->andWhere(['scoopit_source_topic.topic_id' => $this->topicId]);
         }
@@ -93,19 +99,17 @@ class ScoopSearch extends Scoop
         $this->_applyDateRangeFilters();
         $this->applyKeywordFilters();
         $this->_query->andFilterWhere(['LIKE', 'scoopit_source.title', $this->title]);
-      
     }
 
     private function _applyDateRangeFilters()
     {
-        if ($this->date_published == " to ") {
+        if (!isset($this->date_published)) {
             return;
         }
         $pos = strpos($this->date_published, ' to ');
         $this->pub_range_start = date('U', strtotime(substr($this->date_published, 0, $pos) . ' 0:00:00'));
         $this->pub_range_stop = date('U', strtotime(substr($this->date_published, $pos + 4) . ' 23:59:00'));
         $this->_query->andFilterWhere(['BETWEEN', 'date_published', $this->pub_range_start, $this->pub_range_stop]);
-        // $this->_query->andFilterWhere(['BETWEEN', 'date_published', '2016-06-29', '2016-06-29']);
     }
 
     protected function applyKeywordFilters()

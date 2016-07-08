@@ -48,7 +48,7 @@ use kartik\widgets\Select2;
             'locale' => [
                 'format' => 'd M Y',
                 //  'prefix' => 'Published Between ',
-                'separator' => 'to ',
+                'separator' => ' to ',
             ],
             'opens' => 'left'
         ],
