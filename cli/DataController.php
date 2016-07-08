@@ -171,4 +171,12 @@ class DataController extends Controller
         }
     }
 
+    public function actionPatchDates()
+    {
+        foreach (Scoop::find()->all() as $scoop) {
+            $scoop->date_published=$scoop->source->date_retrieved;
+            $scoop->save();
+        }
+    }
+
 }
