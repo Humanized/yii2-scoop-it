@@ -13,9 +13,10 @@ use humanized\scoopit\models\Scoop;
 class ScoopSearch extends Scoop
 {
 
+    public $topicId = NULL;
+    public $afterInitCallback;
     public $title;
     public $keywords = [];
-    public $topicId = NULL;
     public $pub_range_start = NULL;
     public $pub_range_stop = NULL;
     private $_query;
@@ -66,12 +67,8 @@ class ScoopSearch extends Scoop
         $this->load($params);
 
         if (!$this->validate()) {
-
             return $dataProvider;
         }
-
-
-
         $this->_applyFilters();
         $this->_query->orderBy('date_published DESC');
 
@@ -88,9 +85,13 @@ class ScoopSearch extends Scoop
         ;
 
         if (isset($this->topicId)) {
-
             $this->_query->joinWith('source.topics');
             $this->_query->andWhere(['scoopit_source_topic.topic_id' => $this->topicId]);
+        }
+
+        if (isset($this->afterInitCallback)) {
+            $fn = $this->afterInitCallback;
+            $fn($this->_query);
         }
     }
 
