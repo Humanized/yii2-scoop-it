@@ -7,15 +7,22 @@ use kartik\helpers\Html;
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+$span = isset($model->source->image_medium) ? 8 : 12;
 ?>
 <div class ="well">
     <div class ="row">
-        <div class="col-md-4">
-            <?= Html::img($model->source->image_medium, []); ?>
-        </div>
-        <div class="col-md-8">
+        <?php
+        if ($span != 12) {
+            ?>
+            <div class="col-md-4">
+                <?= Html::img($model->source->image_medium, []); ?>
+            </div>
+            <?php
+        }
+        ?>
+        <div class="col-md-<?= $span ?>">
             <h2><?= $model->source->title ?></h2>
-            <i><b>Published On: </b> <?= date('d M Y H:i:s', $model->date_published) . "\n" ?></i>
+            <i><b>Published On: </b> <?= date('d M Y', $model->date_published) . "\n" ?></i>
             <p><?= $model->source->description_raw ?></p>
             <div class="news-item-button">
                 <a class="btn btn-primary" target="_blank" href="<?= $model->source->url ?>"<"role="button">Read More</a>
