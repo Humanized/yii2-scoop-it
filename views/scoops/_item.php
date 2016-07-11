@@ -19,7 +19,7 @@ if (isset($dataBufferCallback)) {
 }
 ?>
 <div class ="well news-item">
-    <i><?= date('d M Y', $model->date_published) ?></i><?= isset($headerContentCallback) ? $headerContentCallback($model, $dataBuffer) : NULL ?>
+    <i><?= date('d M Y', $model->source->date_retrieved) ?></i><?= isset($headerContentCallback) ? $headerContentCallback($model, $dataBuffer) : NULL ?>
     <h2><?= $model->source->title ?></h2>
 
 
@@ -43,43 +43,7 @@ if (isset($dataBufferCallback)) {
                 </div>
             </div>
             <p><?= $model->source->description_raw ?></p>
-            <table>
-                <?php
-                if (!empty($dataBuffer['sectors'])) {
-                    echo '<tr><td class="related-news-label">Related Subsector(s)</td><td>';
-                    $out = '';
-                    foreach ($dataBuffer['sectors'] as $sector) {
-                        if ($out != '') {
-                            $out .=', ';
-                        }
-                        $out.= $sector->code;
-                    }
-                    echo $out . '</td></tr>';
-                }
-                if (!empty($dataBuffer['subjects'])) {
-                    echo '<tr><td class="related-news-label">Related Organisation(s)</td>';
-                    $out = '';
-                    foreach ($dataBuffer['subjects'] as $subject) {
-                        if ($out != '') {
-                            $out .=', ';
-                        }
-                        $out.= $subject->name;
-                    }
-                    echo '<td>' . $out . '</td></tr>';
-                }
-                if (!empty($dataBuffer['keywords'])) {
-                    echo '<tr><td class="related-news-label">Keywords</td><td>';
-                    $out = '';
-                    foreach ($dataBuffer['keywords'] as $keyword) {
-                        if ($out != '') {
-                            $out .=', ';
-                        }
-                        $out.= $keyword->name;
-                    }
-                    echo $out . '</td></tr>';
-                }
-                ?>
-            </table>
+            <?= isset($bodyContentCallback) ? call_user_func($bodyContentCallback, $model, $dataBuffer) : '' ?>
         </div>
 
 

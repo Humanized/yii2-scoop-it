@@ -50,7 +50,7 @@ class DataController extends Controller
         $client = new Client();
         $topics = $client->getTopics(TRUE);
         foreach ($topics as $topic) {
-            $this->actionSync($topic['id']);
+            $this->actionSync($topic['id'], $lastUpdate);
         }
         return 0;
     }
@@ -174,7 +174,7 @@ class DataController extends Controller
     public function actionPatchDates()
     {
         foreach (Scoop::find()->all() as $scoop) {
-            $scoop->date_published=$scoop->source->date_retrieved;
+            $scoop->date_published = $scoop->source->date_retrieved;
             $scoop->save();
         }
     }

@@ -6,6 +6,7 @@ use Yii;
 use yii\base\Model;
 use yii\data\ActiveDataProvider;
 use humanized\scoopit\models\Scoop;
+use yii\db\Query;
 
 /**
  * ScoopSearch represents the model behind the search form about `humanized\scoopit\models\Scoop`.
@@ -21,7 +22,12 @@ class ScoopSearch extends Scoop
     public $keywords = [];
     public $pub_range_start = NULL;
     public $pub_range_stop = NULL;
-    private $_query;
+
+    /**
+     *
+     * @var Query
+     */
+    protected $query;
     private $_keywordTables = [
         't' => ['scoopit_scoop_tag', 'tag_id'],
         'k' => ['scoopit_source_keyword', 'keyword_id']
@@ -62,7 +68,7 @@ class ScoopSearch extends Scoop
         $this->buildSearchQuery();
         $this->applyContextFilters();
         $dataProvider = new ActiveDataProvider([
-            'query' => $this->_query,
+            'query' => $this->query,
             'pagination' => ['pageSize' => $this->pageSize]
         ]);
         $this->load($params);
@@ -70,14 +76,14 @@ class ScoopSearch extends Scoop
             return $dataProvider;
         }
         $this->applySearchFilters();
-        $this->_query->orderBy('date_published DESC');
+        $this->query->orderBy('date_retrieved DESC');
         return $dataProvider;
     }
 
     protected function buildSearchQuery()
     {
         //Join with source keywords and scoop tags
-        $this->_query = Scoop::find()->groupBy('scoopit_scoop.id')
+        $this->query = Scoop::find()->groupBy('scoopit_scoop.id')
                 ->joinWith('tags')
                 ->joinWith('source')
                 ->joinWith('source.keywords')
@@ -87,8 +93,8 @@ class ScoopSearch extends Scoop
     protected function applyContextFilters()
     {
         if (isset($this->topicId)) {
-            $this->_query->joinWith('source.topics');
-            $this->_query->andWhere(['scoopit_source_topic.topic_id' => $this->topicId]);
+            $this->query->joinWith('source.topics');
+            $this->query->andWhere(['scoopit_source_topic.topic_id' => $this->topicId]);
         }
     }
 
@@ -96,7 +102,7 @@ class ScoopSearch extends Scoop
     {
         $this->_applyDateRangeFilters();
         $this->applyKeywordFilters();
-        $this->_query->andFilterWhere(['LIKE', 'scoopit_source.title', $this->title]);
+        $this->query->andFilterWhere(['OR', ['LIKE', 'scoopit_source.title', $this->title], ['LIKE', 'scoopit_source.description_raw', $this->title]]);
     }
 
     private function _applyDateRangeFilters()
@@ -109,7 +115,7 @@ class ScoopSearch extends Scoop
         $pos = strpos($this->date_published, ' to ');
         $this->pub_range_start = date('U', strtotime(substr($this->date_published, 0, $pos) . ' 0:00:00'));
         $this->pub_range_stop = date('U', strtotime(substr($this->date_published, $pos + 4) . ' 23:59:00'));
-        $this->_query->andFilterWhere(['BETWEEN', 'date_published', $this->pub_range_start, $this->pub_range_stop]);
+        $this->query->andFilterWhere(['BETWEEN', 'date_published', $this->pub_range_start, $this->pub_range_stop]);
     }
 
     protected function applyKeywordFilters()
@@ -143,7 +149,7 @@ class ScoopSearch extends Scoop
                 $filter = $condition;
             }
         }
-        $this->_query->andFilterWhere($filter);
+        $this->query->andFilterWhere($filter);
     }
 
     protected function processKeyword($keyword)

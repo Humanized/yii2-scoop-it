@@ -25,9 +25,8 @@ use kartik\widgets\Select2;
     <?= $form->field($model, 'title')->label(false)->textInput(['placeholder' => 'freetext search']); ?>
 
     <?php
-    if (isset($afterTitleCallback)) {
-        $fn = $afterTitleCallback;
-        echo $fn($form, $model);
+    if (isset($afterSearchTextCallback)) {
+        call_user_func($afterSearchTextCallback, $this, $form, $model);
     }
     echo $form->field($model, 'date_published', [
         'addon' => ['prepend' => ['content' => '<i class="glyphicon glyphicon-calendar"></i>']],
@@ -39,17 +38,13 @@ use kartik\widgets\Select2;
         'pluginOptions' => [
             'locale' => [
                 'format' => 'd M Y',
-                //  'prefix' => 'Published Between ',
                 'separator' => ' to ',
             ],
             'opens' => 'left'
         ],
     ]);
-
-    if (isset($afterCalendarCallback)) {
-
-        $fn = $afterCalendarCallback;
-        echo $fn($form, $model);
+    if (isset($afterSearchCalendarCallback)) {
+        call_user_func($afterSearchCalendarCallback, $this, $form, $model);
     }
     // Normal select with ActiveForm & model
     echo $form->field($model, 'keywords')->widget(Select2::classname(), [
@@ -63,10 +58,8 @@ use kartik\widgets\Select2;
         ],
     ])->label(false);
 
-    if (isset($afterKeywordCallback)) {
-
-        $fn = $afterKeywordCallback;
-        echo $fn($form, $model);
+    if (isset($afterSearchKeywordCallback)) {
+        call_user_func($afterSearchKeywordCallback, $this, $form, $model);
     }
     ?>
 

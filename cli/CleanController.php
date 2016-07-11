@@ -74,21 +74,13 @@ class CleanController extends Controller
          */
     }
 
-    public function actionIndex($publish = 0)
+    public function actionIndex($removeTopic = 0)
     {
-        if ($publish != 1 && $publish != 0) {
-            throw new \InvalidArgumentException('provided publish parameter must be either 0 or 1');
-        }
-        /**
-         * GuzzleHttp\Client;
-         */
-        $client = new Client();
-        $topicData = $client->getTopics(TRUE);
-        $this->stdout('found ' . count($topicData) . ' topics' . "\n");
+        $topicData = Topic::find()->all();
         foreach ($topicData as $topic) {
-            $this->_syncTopic($topic, $publish);
-            $this->actionKeywords($topic['id']);
+            $this->actionLocal($topic->id, $removeTopic);
         }
+        return 0;
     }
 
 }
