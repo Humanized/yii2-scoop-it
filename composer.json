@@ -15,7 +15,7 @@
         "guzzlehttp/guzzle": "^6.1",
         "guzzlehttp/oauth-subscriber": "0.3.*",
         "kop/yii2-scroll-pager": "2.4.1",
-        "kartik-v/yii2-date-range": "dev-master"
+        "kartik-v/yii2-date-range": "1.6.6"
     },
     "autoload": {
         "psr-4": {

@@ -13,7 +13,9 @@ use humanized\scoopit\models\Scoop;
 class ScoopSearch extends Scoop
 {
 
+    public $pageSize = 3;
     public $topicId = NULL;
+    public $extraSafeAttributes = [];
     public $afterInitCallback;
     public $title;
     public $keywords = [];
@@ -33,9 +35,9 @@ class ScoopSearch extends Scoop
     {
         return [
             [['id'], 'integer'],
-            [['pub_range_start', 'pub_range_stop'], 'default', 'value' => NULL],
+            //       [['date_published'], 'default', 'value' => NULL],
             [['pub_range_start', 'pub_range_stop'], 'date'],
-            [['title', 'date_published', 'pub_range_start', 'pub_range_stop', 'keywords'], 'safe'],
+            [array_merge(['title', 'date_published', 'pub_range_start', 'pub_range_stop', 'keywords'], $this->extraSafeAttributes), 'safe'],
         ];
     }
 
@@ -57,25 +59,22 @@ class ScoopSearch extends Scoop
      */
     public function search($params)
     {
-
-        $this->_initQuery();
-
+        $this->buildSearchQuery();
+        $this->applyContextFilters();
         $dataProvider = new ActiveDataProvider([
             'query' => $this->_query,
+            'pagination' => ['pageSize' => $this->pageSize]
         ]);
-        $dataProvider->pagination->pageSize = 3;
         $this->load($params);
-
         if (!$this->validate()) {
             return $dataProvider;
         }
-        $this->_applyFilters();
+        $this->applySearchFilters();
         $this->_query->orderBy('date_published DESC');
-
         return $dataProvider;
     }
 
-    private function _initQuery()
+    protected function buildSearchQuery()
     {
         //Join with source keywords and scoop tags
         $this->_query = Scoop::find()->groupBy('scoopit_scoop.id')
@@ -83,19 +82,17 @@ class ScoopSearch extends Scoop
                 ->joinWith('source')
                 ->joinWith('source.keywords')
         ;
+    }
 
+    protected function applyContextFilters()
+    {
         if (isset($this->topicId)) {
             $this->_query->joinWith('source.topics');
             $this->_query->andWhere(['scoopit_source_topic.topic_id' => $this->topicId]);
         }
-
-        if (isset($this->afterInitCallback)) {
-            $fn = $this->afterInitCallback;
-            $fn($this->_query);
-        }
     }
 
-    private function _applyFilters()
+    protected function applySearchFilters()
     {
         $this->_applyDateRangeFilters();
         $this->applyKeywordFilters();
@@ -104,9 +101,11 @@ class ScoopSearch extends Scoop
 
     private function _applyDateRangeFilters()
     {
-        if (!isset($this->date_published)) {
+        if (!isset($this->date_published) || $this->date_published == '') {
+
             return;
         }
+        var_dump($this->date_published);
         $pos = strpos($this->date_published, ' to ');
         $this->pub_range_start = date('U', strtotime(substr($this->date_published, 0, $pos) . ' 0:00:00'));
         $this->pub_range_stop = date('U', strtotime(substr($this->date_published, $pos + 4) . ' 23:59:00'));

@@ -21,6 +21,8 @@ use Yii;
  */
 class Topic extends \yii\db\ActiveRecord
 {
+    
+    
 
     /**
      * @inheritdoc
@@ -70,6 +72,18 @@ class Topic extends \yii\db\ActiveRecord
     {
         return $this->hasMany(Source::className(), ['id' => 'source_id'])->viaTable('scoopit_source_topic', ['topic_id' => 'id']);
     }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getScoops()
+    {
+        return $this->hasMany(Scoop::className(), ['id' => 'source_id'])->viaTable('scoopit_source_topic', ['topic_id' => 'id']);
+    }
+    
+   
+    
+    
 
     /**
      * @return \yii\db\ActiveQuery

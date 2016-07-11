@@ -15,7 +15,7 @@ ListView::widget([
     'dataProvider' => $dataProvider,
     'itemOptions' => ['class' => 'item'],
     'itemView' => '_item',
-    'viewParams' => ['buttonCallback' => $buttonCallback],
+    'viewParams' => $viewParams,
     'summary' => false,
     'pager' => [
         'class' => \kop\y2sp\ScrollPager::className(),
