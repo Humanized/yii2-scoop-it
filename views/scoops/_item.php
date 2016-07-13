@@ -19,9 +19,12 @@ if (isset($dataBufferCallback)) {
 }
 ?>
 <div class ="well news-item">
-    <i><?= date('d M Y', $model->source->date_retrieved) ?></i><?= isset($headerContentCallback) ? $headerContentCallback($model, $dataBuffer) : NULL ?>
-    <h2><?= $model->source->title ?></h2>
+    <i><?= date('d M Y', $model->source->date_retrieved) ?>
 
+    </i>
+    <?= isset($headerContentCallback) ? $headerContentCallback($model, $dataBuffer) : NULL ?>
+    <h2><?= $model->source->title ?></h2>
+    <?= '<b>Provided By: </b>' . Html::a(str_replace('www.', '', parse_url($model->source->url, PHP_URL_HOST)), parse_url($model->source->url, PHP_URL_HOST)) ?>
 
     <div class ="row news-item-body">
         <?php

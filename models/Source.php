@@ -160,7 +160,7 @@ class Source extends \yii\db\ActiveRecord
             }
             $out[0] = $model->save();
         } catch (\Exception $ex) {
-            echo $ex->getMessage();
+            //  echo $ex->getMessage();
             $out[0] = false;
         }
         return $out;
@@ -174,6 +174,35 @@ class Source extends \yii\db\ActiveRecord
             }
         }
         return false;
+    }
+
+    /**
+     * 
+     * @param type $item
+     */
+    public static function findItem($item)
+    {
+        return self::find()->filterWhere([
+                    'OR',
+                    ['id' => $item->id],
+                    ['url' => $item->url]
+                ])->one();
+    }
+
+    public static function create($item)
+    {
+        \yii\helpers\VarDumper::dump($item);
+        $model = new Source();
+        $model->setPostAttributes($item);
+        $model->save();
+        try {
+            if ($model->save()) {
+                return $model;
+            }
+        } catch (\Exception $ex) {
+            
+        }
+        return null;
     }
 
 }

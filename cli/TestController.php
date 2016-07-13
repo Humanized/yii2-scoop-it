@@ -10,10 +10,7 @@ namespace humanized\scoopit\cli;
 
 use yii\console\Controller;
 use humanized\scoopit\Client;
-use GuzzleHttp\Client as GuzzleClient;
-use GuzzleHttp\HandlerStack;
-use GuzzleHttp\Subscriber\Oauth\Oauth1;
-use Yii;
+use humanized\scoopit\models\Topic;
 use yii\helpers\Console;
 
 /**
@@ -59,6 +56,23 @@ class TestController extends Controller
         }
         $this->stdout($out . "\n");
         return 0;
+    }
+
+    public function actionDebugAutoScoop($topicId)
+    {
+        $topic = Topic::findOne(!is_numeric($topicId) ? ['name' => $topicId] : $topicId);
+        if (NULL === $topic) {
+            $this->stdout("No Such Topic \n");
+            return 1;
+        }
+        $client = new Client();
+
+        //Auto scoop when condition is satisfied
+
+        if (isset($this->module->params['autoScoopCondition']) && call_user_func($this->module->params['autoScoopCondition'], $topic)) {
+            $this->stdout('auto-scooping: ');
+            $this->stdout($topic->name."\n", Console::FG_GREEN, Console::BOLD);
+        }
     }
 
 }

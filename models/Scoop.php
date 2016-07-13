@@ -2,7 +2,6 @@
 
 namespace humanized\scoopit\models;
 
-use Yii;
 
 /**
  * This is the model class for table "scoop".
@@ -109,7 +108,6 @@ class Scoop extends \yii\db\ActiveRecord
 
     public function linkTag($tag)
     {
-
         $tagId = $tag;
         if (!is_numeric($tag)) {
             $model = Tag::findOne(['name' => $tag]);
@@ -138,9 +136,8 @@ class Scoop extends \yii\db\ActiveRecord
 
     public function afterSave($insert, $changedAttributes)
     {
+        //Run post-processor when set and not already postprocessing
         if (isset($this->postProcessor) && !$this->postProcessing) {
-
-
             $postprocess = $this->postProcessor;
             $postprocess($this, $insert, $changedAttributes);
         }

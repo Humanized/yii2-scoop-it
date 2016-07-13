@@ -21,8 +21,9 @@ use Yii;
  */
 class Topic extends \yii\db\ActiveRecord
 {
-    
-    
+
+    public $excludeNewsItems = [];
+    public $limit = null;
 
     /**
      * @inheritdoc
@@ -62,7 +63,7 @@ class Topic extends \yii\db\ActiveRecord
      */
     public function getSourceTopics()
     {
-        return $this->hasMany(SourceTopic::className(), ['topic_id' => 'id']);
+        return $this->hasMany(SourceTopic::className(), ['topic_id' => 'id'])->andFilterWhere(['NOT IN', 'source_topic.source_id', $this->excludeNewsItems]);
     }
 
     /**
@@ -70,7 +71,11 @@ class Topic extends \yii\db\ActiveRecord
      */
     public function getSources()
     {
-        return $this->hasMany(Source::className(), ['id' => 'source_id'])->viaTable('scoopit_source_topic', ['topic_id' => 'id']);
+        $_q = $this->hasMany(Source::className(), ['id' => 'source_id'])->via('sourceTopics');
+        if (isset($this->limit)) {
+            $_q->limit($this->limit);
+        }
+        return $_q;
     }
 
     /**
@@ -78,12 +83,12 @@ class Topic extends \yii\db\ActiveRecord
      */
     public function getScoops()
     {
-        return $this->hasMany(Scoop::className(), ['id' => 'source_id'])->viaTable('scoopit_source_topic', ['topic_id' => 'id']);
+        $_q = $this->hasMany(Scoop::className(), ['id' => 'source_id'])->via('sourceTopics');
+        if (isset($this->limit)) {
+            $_q->limit($this->limit);
+        }
+        return $_q;
     }
-    
-   
-    
-    
 
     /**
      * @return \yii\db\ActiveQuery

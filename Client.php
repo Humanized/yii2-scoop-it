@@ -38,7 +38,8 @@ class Client extends \GuzzleHttp\Client
             'token' => Yii::$app->params['scoopit']['token'],
             'token_secret' => Yii::$app->params['scoopit']['tokenSecret']
         ];
-        $this->_initStack();
+        $middleware = new Oauth1($this->_middlewareConfig);
+        $this->_stack->push($middleware);
         parent::__construct([
             'base_uri' => Yii::$app->params['scoopit']['remoteUri'],
             'handler' => &$this->_stack,
@@ -64,33 +65,6 @@ class Client extends \GuzzleHttp\Client
         $this->_pager = 1;
     }
 
-    private function _initStack()
-    {
-        $middleware = new Oauth1($this->_middlewareConfig);
-        $this->_stack->push($middleware);
-    }
-
-    private function _processTokenRequestResponse()
-    {
-        $this->_requestTokenParams = [];
-        $requestTokenResponse = $this->post('/oauth/request')->getBody()->getContents();
-
-        foreach (explode('&', $requestTokenResponse) as $queryString) {
-            $q = explode('=', $queryString);
-            if ($q[0] == "oauth_token") {
-                $this->_appendTokenMiddlewareConfig("token", $q[1]);
-            }
-            if ($q[0] == "oauth_token_secret") {
-                $this->_appendTokenMiddleWareConfig("token_secret", $q[1]);
-            }
-        }
-    }
-
-    private function _appendTokenMiddlewareConfig($attrib, $value)
-    {
-        $this->_middlewareConfig[$attrib] = $value;
-    }
-
     public function incrementPager()
     {
 
@@ -102,52 +76,6 @@ class Client extends \GuzzleHttp\Client
     {
         $this->_pager = 1;
         echo 'pager-set:' . $this->_pager . "\n";
-    }
-
-    public function getRawSource($topicId, $lastUpdate = 0)
-    {
-        $raw = $this->get('api/1/topic', ['query' => ['since' => time() - (60 * 60 * $lastUpdate), 'id' => $topicId]
-        ]);
-        $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
-        return $out;
-    }
-
-    public function getSources($topicId, $lastUpdate = 0)
-    {
-
-        return $this->_getSources('curablePosts', $topicId, $lastUpdate);
-    }
-
-    public function getScoops($topicId, $lastUpdate = 0)
-    {
-
-        return $this->_getSources('curatedPosts', $topicId, $lastUpdate);
-    }
-
-    public function _getSources($var, $topicId, $lastUpdate)
-    {
-        $queryParams = [
-            // 'page' => $this->_pager,
-            'id' => $topicId,
-            'since' => time() - (60 * 60 * $lastUpdate)
-        ];
-        if ($var == 'curablePosts') {
-            $queryParams['curable'] = 150;
-            //  echo 'curable-pager-set:' . $this->_pager . "\n";
-            $queryParams['curablePage'] = $this->_pager;
-        } elseif ($var == 'curatedPosts') {
-            $queryParams['curated'] = 150;
-         //   $queryParams['page'] = $this->_pager;
-        }
-
-
-        $raw = $this->get('api/1/topic', [
-            'query' => $queryParams
-        ]);
-
-        $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
-        echo 'total post-count to process: ' . $out->curatedPostCount . "\n";
-        return $out->$var;
     }
 
     public function getTopics($filerOutput = FALSE)
@@ -181,7 +109,6 @@ class Client extends \GuzzleHttp\Client
         };
         $isSetFilter = isset(Yii::$app->params['scoopit']['topicOptions']) && isset(Yii::$app->params['scoopit']['topicOptions']['importFilter']);
         if ($isSetFilter) {
-
             $filter = Yii::$app->params['scoopit']['topicOptions']['importFilter'];
         }
         $importTopic = function($topic) use ($filter) {
@@ -192,6 +119,54 @@ class Client extends \GuzzleHttp\Client
             }
         };
         return $importTopic;
+    }
+
+    public function autoScoop($topicId, $lastUpdate)
+    {
+        $remoteSources = $this->getSources($topicId, $lastUpdate);
+        $queryParams = ['action' => 'accept', 'id' => $topicId, 'directLink' => 0];
+        foreach ($remoteSources as $remoteSource) {
+            $queryParams['id'] = $remoteSource->id;
+            $this->post('api/1/post', ['query' => $queryParams]);
+        }
+    }
+
+    public function getRawSource($topicId, $lastUpdate = 0)
+    {
+        $raw = $this->get('api/1/topic', ['query' => ['since' => time() - (60 * 60 * $lastUpdate), 'id' => $topicId]
+        ]);
+        $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
+        return $out;
+    }
+
+    public function getSources($topicId, $lastUpdate = 0)
+    {
+        return $this->_getContent('curablePosts', $topicId, $lastUpdate);
+    }
+
+    public function getScoops($topicId, $lastUpdate = 0)
+    {
+        return $this->_getContent('curatedPosts', $topicId, $lastUpdate);
+    }
+
+    private function _getContent($from, $topicId, $lastUpdate)
+    {
+        $queryParams = [
+            // 'page' => $this->_pager,
+            'id' => $topicId,
+            'since' => time() - (60 * 60 * $lastUpdate)
+        ];
+        if ($from == 'curablePosts') {
+            $queryParams['curable'] = 150;
+            $queryParams['curablePage'] = $this->_pager;
+        } elseif ($from == 'curatedPosts') {
+            $queryParams['curated'] = 150;
+        }
+        $raw = $this->get('api/1/topic', [
+            'query' => $queryParams
+        ]);
+        $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
+        return $out->$from;
     }
 
 }
