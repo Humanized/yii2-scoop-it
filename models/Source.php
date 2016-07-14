@@ -21,8 +21,8 @@ use Yii;
  * @property string $image_large
  * @property string $language_id
  *
- * @property Scoop $Scoop
- * @property SourceKeyword[] $SourceKeywords
+ * @property Scoop $scoop
+ * @property SourceKeyword[] $sourceKeywords
  * @property Keyword[] $keywords
  */
 class Source extends \yii\db\ActiveRecord

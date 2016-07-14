@@ -16,7 +16,7 @@ use humanized\scoopit\models\Topic;
 use humanized\scoopit\models\Keyword;
 
 /**
- * A CLI port of the Yii2 RBAC Manager Interface.
+ * Scoopit Setup
  *
  * 
  * @name Scoop.it CLI Setup Tool
@@ -37,9 +37,9 @@ class SetupController extends Controller
          * GuzzleHttp\Client;
          */
         $client = new Client();
-        $topicData = $client->getTopics(TRUE);
-        $this->stdout('found ' . count($topicData) . ' topics' . "\n");
-        foreach ($topicData as $topic) {
+        $topics = $client->getTopics(TRUE);
+        $this->stdout('found ' . count($topics) . ' topics' . "\n");
+        foreach ($topics as $topic) {
             $this->_syncTopic($topic, $publish);
             $this->actionKeywords($topic['id']);
         }
@@ -58,11 +58,50 @@ class SetupController extends Controller
             $this->_syncKeyword($keyword);
             $model->linkKeyword($keyword);
         }
-
         return 0;
     }
 
-    private function _syncTopic($topic, $publish)
+    private function _syncTopic($topicData, $publish)
+    {
+        $model = $this->_getLocalTopic($topicData);
+        if (!isset($model)) {
+            $model = $this->_createLocalTopic($topicData, $publish);
+        }
+        if (isset($this->module->params['mapTopic']) && is_callable($this->module->params['mapTopic'])) {
+            call_user_func($this->module->params['mapTopic'], $model);
+        }
+    }
+
+    private function _getLocalTopic($topicData)
+    {
+        $model = \humanized\scoopit\models\Topic::findOne($topicData['id']);
+        if (!isset($model)) {
+            $model = $this->_mergeLocalTopic($topicData);
+        }
+        return $model;
+    }
+
+    private function _mergeLocalTopic($topicData)
+    {
+        $model = \humanized\scoopit\models\Topic::findOne(['name' => $topicData['name']]);
+        if (isset($model)) {
+            $model->id = $topicData['id'];
+            $model->save();
+        }
+        return $model;
+    }
+
+    private function _createLocalTopic($topicData, $publish)
+    {
+        $model = new Topic(['id' => $topicData['id'], 'name' => $topicData['name'], 'is_published' => $publish]);
+        if (!$model->save()) {
+            //VarDumper::dump($model->errors);
+            return null;
+        }
+        return $model;
+    }
+
+    private function _syncTopi2c($topic, $publish)
     {
         $model = Topic::findOne($topic['id']);
         //Create a new model if required
@@ -95,35 +134,6 @@ class SetupController extends Controller
             //Sync names if scoop.it name has changed (existing model only)
         }
         return true;
-    }
-
-    public function actionPool($topicId)
-    {
-        $pool = \humanized\scoopit\models\Topic::findOne(!is_numeric($topicId) ? ['name' => $topicId] : $topicId);
-        if (NULL === $pool) {
-            $this->stderr("setup/pool: No Such Topic! \n");
-            return 1;
-        }
-
-        if (false === strpos($pool->name, '-pool')) {
-            $this->stderr("setup/pool: Topic not suffixed by -pool! \n");
-            return 2;
-        }
-        $master = \humanized\scoopit\models\Topic::findOne(['name' => str_replace('-pool', '', $pool->name)]);
-        if (NULL === $master) {
-            $this->stderr("setup/pool: Pool does not have a master topic! \n");
-            return 3;
-        }
-
-        $client = new Client();
-        //Get sources by reverse pubdate
-        $remoteSources = array_reverse($client->getSources($pool->id, 1));
-        $queryParams = ['action' => 'accept', 'topicId' => $pool->id, 'directLink' => 0];
-        //Setups first 110 sources (API limitation)
-        foreach ($remoteSources as $remoteSource) {
-            $queryParams['id'] = $remoteSource->id;
-            $client->post('api/1/post', ['query' => $queryParams]);
-        }
     }
 
 }

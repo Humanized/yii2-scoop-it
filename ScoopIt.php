@@ -15,6 +15,7 @@ class ScoopIt extends \yii\base\Module
     public $saveSuggestions = false;
     public $preProcessorClass;
     public $postProcessorClass;
+    public $mapTopic;
     public $autoScoopConfig = ['topicSuffix' => '-pool'];
 
     public function init()
@@ -23,12 +24,18 @@ class ScoopIt extends \yii\base\Module
         if (\Yii::$app instanceof \yii\console\Application) {
             $this->controllerNamespace = 'humanized\scoopit\cli';
             $this->params['saveSuggestions'] = $this->saveSuggestions;
+
             if (isset($this->preProcessorClass)) {
-                $this->params['postProcessorClass'] = $this->postProcessorClass;
+                $this->params['preProcessorClass'] = $this->preProcessorClass;
             }
             if (isset($this->postProcessorClass)) {
                 $this->params['postProcessorClass'] = $this->postProcessorClass;
             }
+
+            if (isset($this->mapTopic)) {
+                $this->params['mapTopic'] = $this->mapTopic;
+            }
+
             $this->_initAutoScoopConfig();
         }
     }
@@ -44,7 +51,7 @@ class ScoopIt extends \yii\base\Module
         if (isset($params['topicSuffix'])) {
             $var = $params['topicSuffix'];
             $this->params['autoScoopTopicCondition'] = function($topic) use ($var) {
-           //     echo substr($topic->name, -strlen($var)) . '==' . $var . "\n";
+                //     echo substr($topic->name, -strlen($var)) . '==' . $var . "\n";
                 return (substr($topic->name, -strlen($var)) == $var);
             };
             return;

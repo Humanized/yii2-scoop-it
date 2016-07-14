@@ -8,15 +8,12 @@
 
 namespace humanized\scoopit\cli;
 
-use Yii;
 use yii\console\Controller;
 use humanized\scoopit\Client;
-use yii\helpers\VarDumper;
 use humanized\scoopit\models\Topic;
-use humanized\scoopit\models\Keyword;
 
 /**
- * Provides an interface to clean local and remote scoop.it topic content
+ * Provides an interface to clean both local and remote scoop.it topic content
  *
  * 
  * @name Scoop.it CLI Clean Tool
@@ -29,6 +26,7 @@ class CleanController extends Controller
 {
 
     /**
+     * 
      * 
      * @param integer|string $topicId
      */
@@ -62,16 +60,8 @@ class CleanController extends Controller
         $client = new Client();
         foreach ($client->getScoops($topic->id) as $remoteScoop) {
             $queryParams['id'] = $remoteScoop->id;
-            var_dump($client->post('api/1/post', ['query' => $queryParams])->getBody()->getContents());
+            $client->post('api/1/post', ['query' => $queryParams]);
         }
-
-        /*
-
-          $queryParams = ['action' => 'delete','id'=>$sourceId];
-          $client = new Client();
-          $client->post('api/1/post', ['query' => $queryParams]);
-         * 
-         */
     }
 
     public function actionIndex($removeTopic = 0)
