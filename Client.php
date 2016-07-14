@@ -35,8 +35,8 @@ class Client extends \GuzzleHttp\Client
         $this->_middlewareConfig = [
             'consumer_key' => Yii::$app->params['scoopit']['consumerKey'],
             'consumer_secret' => Yii::$app->params['scoopit']['consumerSecret'],
-            'token' => Yii::$app->params['scoopit']['token'],
-            'token_secret' => Yii::$app->params['scoopit']['tokenSecret']
+            'token' => isset(Yii::$app->params['scoopit']['token']) ? Yii::$app->params['scoopit']['token'] : NULL,
+            'token_secret' => isset(Yii::$app->params['scoopit']['tokenSecret']) ? Yii::$app->params['scoopit']['tokenSecret'] : NULL
         ];
         $middleware = new Oauth1($this->_middlewareConfig);
         $this->_stack->push($middleware);

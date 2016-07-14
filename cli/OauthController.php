@@ -36,7 +36,6 @@ class OauthController extends Controller
     public function actionIndex()
     {
         $this->_initConfig();
-
         //Leg #1: Obtain application request token 
         $requestTokenResponse = $this->_processRequestToken();
         //Leg #2: Obtain authorisation verifier
@@ -44,12 +43,8 @@ class OauthController extends Controller
         //Leg #3: 
         $this->_updateMiddleware($requestTokenResponse, $authorisationVerfier);
         $accessTokenResponse = $this->_processAccessToken();
-        \yii\helpers\VarDumper::dump($accessTokenResponse);
-        /*
-          $authorizationTokenResponse = $this->_processAuthorisationToken($requestTokenResponse);
-          \yii\helpers\VarDumper::dump($authorizationTokenResponse->getBody()->getMetadata());
-         * 
-         */
+        $this->_out($accessTokenResponse);
+        return 0;
     }
 
     private function _initConfig()
@@ -59,8 +54,8 @@ class OauthController extends Controller
         $this->_callbackUri = \yii\helpers\Url::toRoute(['/' . $this->module->id . "/default/oauth-callback"], true);
         //echo $this->_callbackUri . "\n";
         $this->_middlewareConfig = [
-            'consumer_key' => $this->_params['remoteConsumerKey'],
-            'consumer_secret' => $this->_params['remoteSecretKey'],
+            'consumer_key' => $this->_params['consumerKey'],
+            'consumer_secret' => $this->_params['consumerSecret'],
             'token' => false,
             'token_secret' => false,
         ];
@@ -90,8 +85,6 @@ class OauthController extends Controller
             }
         }
         $this->_middlewareConfig['verifier'] = $authorisationVerfier;
-
-        // var_dump($this->_middlewareConfig);
     }
 
     private function _processAccessToken()
@@ -110,6 +103,11 @@ class OauthController extends Controller
             'handler' => $stack,
             'auth' => 'oauth'
         ]);
+    }
+
+    private function _out($accessTokenResponse)
+    {
+        $this->stdout(str_replace('&', "\n", $accessTokenResponse) . "\n");
     }
 
 }
