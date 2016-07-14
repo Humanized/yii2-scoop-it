@@ -15,14 +15,14 @@ use Yii;
  * @property Scoop[] $scoops
  * @property TopicKeyword[] $topicKeywords
  * @property Keyword[] $keywords
- * @property TopicMap[] $topicMaps
+ * @property TopicMap $topicMap
  * @property TopicTag[] $topicTags
  * @property Tag[] $tags
  */
 class Topic extends \yii\db\ActiveRecord
 {
 
-    public $excludeNewsItems = [];
+    public $excludedNewsItems = [];
     public $limit = null;
 
     /**
@@ -63,7 +63,7 @@ class Topic extends \yii\db\ActiveRecord
      */
     public function getSourceTopics()
     {
-        return $this->hasMany(SourceTopic::className(), ['topic_id' => 'id'])->andFilterWhere(['NOT IN', 'source_topic.source_id', $this->excludeNewsItems]);
+        return $this->hasMany(SourceTopic::className(), ['topic_id' => 'id'])->andFilterWhere(['NOT IN', 'scoopit_source_topic.source_id', $this->excludedNewsItems]);
     }
 
     /**
@@ -93,6 +93,18 @@ class Topic extends \yii\db\ActiveRecord
     /**
      * @return \yii\db\ActiveQuery
      */
+    public function getRelatedNews()
+    {
+        $sourcify = function($scoop) {
+            return $scoop->source;
+        };
+        $this->limit = 3;
+        return array_map($sourcify, $this->scoops);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
     public function getTopicKeywords()
     {
         return $this->hasMany(TopicKeyword::className(), ['topic_id' => 'id']);
@@ -109,9 +121,9 @@ class Topic extends \yii\db\ActiveRecord
     /**
      * @return \yii\db\ActiveQuery
      */
-    public function getTopicMaps()
+    public function getTopicMap()
     {
-        return $this->hasMany(TopicMap::className(), ['topic_id' => 'id']);
+        return $this->hasOne(TopicMap::className(), ['topic_id' => 'id']);
     }
 
     /**

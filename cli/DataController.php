@@ -109,8 +109,7 @@ class DataController extends Controller
                 $this->_syncScoopTags($item);
             }
             if (isset($this->module->params['postProcessorClass']) && method_exists($this->module->params['postProcessorClass'], 'afterSync')) {
-                call_user_func([$this->module->params['postProcessorClass'], 'afterSync'],$topic,$source);
-               
+                call_user_func([$this->module->params['postProcessorClass'], 'afterSync'], $topic, $source);
             }
         }
         return $source;
@@ -137,7 +136,7 @@ class DataController extends Controller
                     $this->stdout('Scoop Imported' . "\n");
                     return;
                 }
-                VarDumper::dump($model->errors);
+                //   VarDumper::dump($model->errors);
             } catch (\Exception $ex) {
                 
             }

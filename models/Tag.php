@@ -16,6 +16,8 @@ use Yii;
 class Tag extends \yii\db\ActiveRecord
 {
 
+    public $excludedNewsItems = [];
+
     /**
      * @inheritdoc
      */
@@ -60,6 +62,11 @@ class Tag extends \yii\db\ActiveRecord
     public function getTopics()
     {
         return $this->hasMany(Topic::className(), ['id' => 'topic_id'])->viaTable('scoopit_topic_tag', ['tag_id' => 'id']);
+    }
+
+    public function getRelatedNews()
+    {
+        return [];
     }
 
 }

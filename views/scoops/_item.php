@@ -2,21 +2,40 @@
 
 use kartik\helpers\Html;
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
-$span = isset($model->source->image_medium) ? 8 : 12;
+/* @var $this yii\web\View */
+/* @var $model humanized\scoopit\models\Scoop */
 
+$relatedNewsBuffer = [];
+$excludedResults = [$model->id];
 $dataBuffer = [
     'topics' => $model->source->topics,
     'tags' => $model->tags,
 ];
-
 if (isset($dataBufferCallback)) {
-    $dataBuffer = array_merge($dataBuffer, $dataBufferCallback($model));
+    $dataBuffer = array_merge($dataBufferCallback($model), $dataBuffer);
 }
+
+$getScoopId = function($scoop) {
+    return $scoop->id;
+};
+
+$getRelatedNewsLink = function($model) {
+    return ['label' => $model->title, 'url' => $model->url];
+};
+
+foreach ($dataBuffer as $key => $data) {
+    if (!empty($data)) {
+        $relatedNewsBuffer[$key] = [];
+        foreach ($data as $relatedModel) {
+            $relatedModel->excludedNewsItems = $excludedResults;
+            $relatedNews = $relatedModel->relatedNews;
+            $relatedNewsBuffer[$key][$relatedModel->id] = array_map($getRelatedNewsLink, $relatedNews);
+            $excludedResults = array_merge($excludedResults, array_map($getScoopId, $relatedNews));
+        }
+    }
+}
+
+$span = isset($model->source->image_medium) ? 8 : 12;
 ?>
 <div class ="well news-item">
     <i><?= date('d M Y', $model->source->date_retrieved) ?>
@@ -24,7 +43,7 @@ if (isset($dataBufferCallback)) {
     </i>
     <?= isset($headerContentCallback) ? $headerContentCallback($model, $dataBuffer) : NULL ?>
     <h2><?= $model->source->title ?></h2>
-    <?= '<b>Provided By: </b>' . Html::a(str_replace('www.', '', parse_url($model->source->url, PHP_URL_HOST)), parse_url($model->source->url, PHP_URL_HOST)) ?>
+    <?= 'By: ' . Html::a(parse_url($model->source->url, PHP_URL_HOST), "http://" . parse_url($model->source->url, PHP_URL_HOST), ['target' => '_blank', 'style' => 'text-decoration:none']) ?>
 
     <div class ="row news-item-body">
         <?php
@@ -42,7 +61,15 @@ if (isset($dataBufferCallback)) {
             <div class="news-item-buttons-outer">
                 <div class="news-item-buttons-inner">
                     <a class="btn btn-primary" target="_blank" href="<?= $model->source->url ?>"<"role="button">Read More</a>
-                    <?= call_user_func($buttonCallback, $model) ?>
+                    <?=
+                    isset($relatedNewsItems) ?
+                            \yii\bootstrap\ButtonDropdown::widget([
+                                'label' => 'Related News',
+                                'options' => ['class' => 'btn btn-primary'],
+                                'dropdown' => [
+                                    'items' => is_callable($relatedNewsItems) ? call_user_func($relatedNewsItems, $relatedNewsBuffer['topics']) : $relatedNewsItems
+                        ]]) : ''
+                    ?>
                 </div>
             </div>
             <p><?= $model->source->description_raw ?></p>

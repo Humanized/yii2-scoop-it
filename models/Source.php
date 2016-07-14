@@ -191,7 +191,7 @@ class Source extends \yii\db\ActiveRecord
 
     public static function create($item)
     {
-        \yii\helpers\VarDumper::dump($item);
+
         $model = new Source();
         $model->setPostAttributes($item);
         $model->save();
