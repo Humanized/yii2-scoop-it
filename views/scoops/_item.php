@@ -73,7 +73,7 @@ $span = isset($model->source->image_medium) ? 8 : 12;
                 </div>
             </div>
             <p><?= $model->source->description_raw ?></p>
-            <?= isset($bodyContentCallback) ? call_user_func($bodyContentCallback, $model, $dataBuffer) : '' ?>
+            <?= isset($bodyContentCallback) ? call_user_func($bodyContentCallback, ['model' => $model, 'data' => $dataBuffer, 'related' => $relatedNewsBuffer]) : '' ?>
         </div>
 
 
