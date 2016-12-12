@@ -4,6 +4,21 @@ namespace humanized\scoopit;
 
 /**
  * 
+ * Yii2 Scoop.it module
+ * 
+ * A small, flexible framework for interfacing with a Scoop.it account.
+ * 
+ * Provides following functionality:
+ * 
+ * Data Acquisition:
+ * - Setup CLI: Topic synchronisation and internal linkage
+ * - Data CLI: Content synchronisation
+ * 
+ * GUI
+ * 
+ * 
+ * 
+ * 
  * @name Yii2 Scoopit Module Class 
  * @version 0.1 
  * @author Jeffrey Geyssens <jeffrey@humanized.be>
@@ -51,7 +66,6 @@ class ScoopIt extends \yii\base\Module
         if (isset($params['topicSuffix'])) {
             $var = $params['topicSuffix'];
             $this->params['autoScoopTopicCondition'] = function($topic) use ($var) {
-                //     echo substr($topic->name, -strlen($var)) . '==' . $var . "\n";
                 return (substr($topic->name, -strlen($var)) == $var);
             };
             return;

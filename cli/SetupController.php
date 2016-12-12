@@ -13,6 +13,7 @@ use yii\console\Controller;
 use humanized\scoopit\Client;
 use yii\helpers\VarDumper;
 use humanized\scoopit\models\Topic;
+use humanized\scoopit\models\TopicMap;
 use humanized\scoopit\models\Keyword;
 
 /**
@@ -33,107 +34,104 @@ class SetupController extends Controller
         if ($publish != 1 && $publish != 0) {
             throw new \InvalidArgumentException('provided publish parameter must be either 0 or 1');
         }
-        /**
-         * GuzzleHttp\Client;
-         */
-        $client = new Client();
-        $topics = $client->getTopics(TRUE);
-        $this->stdout('found ' . count($topics) . ' topics' . "\n");
-        foreach ($topics as $topic) {
-            $this->_syncTopic($topic, $publish);
-            $this->actionKeywords($topic['id']);
-        }
-    }
-
-    public function actionKeywords($topicId)
-    {
-        $model = Topic::findOne($topicId);
-        if (!isset($model)) {
-            throw new \Exception('Topic ID does not correspond to a database-entry');
-        }
-        $client = new Client();
-        $keywordData = $client->getTopicKeywords($topicId);
-
-        foreach ($keywordData as $keyword) {
-            $this->_syncKeyword($keyword);
-            $model->linkKeyword($keyword);
-        }
+        Topic::syncAll($publish);
         return 0;
     }
+    
+    /*
 
-    private function _syncTopic($topicData, $publish)
+    public function actionLink($topic, $route)
     {
-        $model = $this->_getLocalTopic($topicData);
+        $model = Topic::resolve($topic);
         if (!isset($model)) {
-            $model = $this->_createLocalTopic($topicData, $publish);
+            return false;
         }
-        if (isset($this->module->params['mapTopic']) && is_callable($this->module->params['mapTopic'])) {
-            call_user_func($this->module->params['mapTopic'], $model);
-        }
+        $data = ['topic_id' => $model->id, 'name' => $route];
+        
+        
     }
 
-    private function _getLocalTopic($topicData)
+    public function actionUnlink($topic, $route)
     {
-        $model = \humanized\scoopit\models\Topic::findOne($topicData['id']);
+        $model = Topic::resolve($topic);
         if (!isset($model)) {
-            $model = $this->_mergeLocalTopic($topicData);
+            return false;
         }
-        return $model;
+        $data = ['topic_id' => $model->id, 'name' => $route];
     }
 
-    private function _mergeLocalTopic($topicData)
-    {
-        $model = \humanized\scoopit\models\Topic::findOne(['name' => $topicData['name']]);
-        if (isset($model)) {
-            $model->id = $topicData['id'];
-            $model->save();
-        }
-        return $model;
-    }
+    /*
 
-    private function _createLocalTopic($topicData, $publish)
-    {
-        $model = new Topic(['id' => $topicData['id'], 'name' => $topicData['name'], 'is_published' => $publish]);
-        if (!$model->save()) {
-            //VarDumper::dump($model->errors);
-            return null;
-        }
-        return $model;
-    }
+      public function actionKeywords($topicId)
+      {
+      $model = Topic::findOne($topicId);
+      if (!isset($model)) {
+      throw new \Exception('Topic ID does not correspond to a database-entry');
+      }
+      $client = new Client();
+      $keywordData = $client->getTopicKeywords($topicId);
 
-    private function _syncTopi2c($topic, $publish)
-    {
-        $model = Topic::findOne($topic['id']);
-        //Create a new model if required
-        if (!isset($model)) {
-            $this->stdout('creating topic #' . $topic['id'] . ' with name ' . $topic['name'] . "\n");
-            $model = new Topic(['id' => $topic['id'], 'name' => $topic['name'], 'is_published' => $publish]);
-            if (!$model->save()) {
-                VarDumper::dump($model->errors);
-                return false;
-            }
-            //Sync names if scoop.it name has changed (existing model only)
-        } elseif ($model->name != $topic['name']) {
-            $this->stdout('changing short name #' . $topic['id'] . ': ' . $model->name . ' to ' . $topic['name'] . "\n");
-            $model->name = $topic['name'];
-            return $model->save();
-        }
-        return true;
-    }
+      foreach ($keywordData as $keyword) {
+      $this->_syncKeyword($keyword);
+      $model->linkKeyword($keyword);
+      }
+      return 0;
+      }
 
-    public function _syncKeyword($keyword)
-    {
-        $model = Keyword::findOne(['name' => $keyword]);
-        //Create a new model if required
-        if (!isset($model)) {
-            $this->stdout('creating keyword with name ' . $keyword . "\n");
-            $model = new Keyword(['name' => $keyword]);
-            if (!$model->save()) {
-                VarDumper::dump($model->errors);
-            }
-            //Sync names if scoop.it name has changed (existing model only)
-        }
-        return true;
-    }
+      private function _syncTopic($topicData, $publish)
+      {
+      $model = $this->_getLocalTopic($topicData);
+      if (!isset($model)) {
+      $model = $this->_createLocalTopic($topicData, $publish);
+      }
+      if (isset($this->module->params['mapTopic']) && is_callable($this->module->params['mapTopic'])) {
+      call_user_func($this->module->params['mapTopic'], $model);
+      }
+      }
 
+      private function _getLocalTopic($topicData)
+      {
+      $model = \humanized\scoopit\models\Topic::findOne($topicData['id']);
+      if (!isset($model)) {
+      $model = $this->_mergeLocalTopic($topicData);
+      }
+      return $model;
+      }
+
+      private function _mergeLocalTopic($topicData)
+      {
+      $model = \humanized\scoopit\models\Topic::findOne(['name' => $topicData['name']]);
+      if (isset($model)) {
+      $model->id = $topicData['id'];
+      $model->save();
+      }
+      return $model;
+      }
+
+      private function _createLocalTopic($topicData, $publish)
+      {
+      $model = new Topic(['id' => $topicData['id'], 'name' => $topicData['name'], 'is_published' => $publish]);
+      if (!$model->save()) {
+      //VarDumper::dump($model->errors);
+      return null;
+      }
+      return $model;
+      }
+
+      public function _syncKeyword($keyword)
+      {
+      $model = Keyword::findOne(['name' => $keyword]);
+      //Create a new model if required
+      if (!isset($model)) {
+      $this->stdout('creating keyword with name ' . $keyword . "\n");
+      $model = new Keyword(['name' => $keyword]);
+      if (!$model->save()) {
+      VarDumper::dump($model->errors);
+      }
+      //Sync names if scoop.it name has changed (existing model only)
+      }
+      return true;
+      }
+     * 
+     */
 }

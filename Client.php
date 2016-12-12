@@ -6,20 +6,51 @@ use Yii;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Subscriber\Oauth\Oauth1;
 
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
- */
+/**
+ * PHP Scoop.it HTTP Client
+ * 
+ * The third-party tool provides an API operation allowing access to the raw data, using programming code.
+ * The operations supported by the API are listed on http://www.scoop.it/dev/api/1/
+ * 
 
+ */
 class Client extends \GuzzleHttp\Client
 {
 
+    /**
+     *
+     * @var type 
+     */
     public $_requestTokenParams = [];
+
+    /**
+     *
+     * @var type 
+     */
     public $_accessTokenParams = [];
+
+    /**
+     *
+     * @var type 
+     */
     public $_authorizationResponse = NULL;
+
+    /**
+     *
+     * @var type 
+     */
     public $_stack;
+
+    /**
+     *
+     * @var type 
+     */
     private $_middlewareConfig = [];
+
+    /**
+     *
+     * @var type 
+     */
     private $_pager = 1;
 
     /**
@@ -121,14 +152,74 @@ class Client extends \GuzzleHttp\Client
         return $importTopic;
     }
 
+    public function deleteScoop($topicId, $postId)
+    {
+        
+    }
+
     public function autoScoop($topicId, $lastUpdate)
     {
-        $remoteSources = $this->getSources($topicId, $lastUpdate);
-        $queryParams = ['action' => 'accept', 'id' => $topicId, 'directLink' => 0];
+        $remoteSources = $this->_getContent('curablePosts', $topicId, $lastUpdate);
+        $queryParams = ['action' => 'accept', 'topicId' => $topicId, 'directLink' => 0];
         foreach ($remoteSources as $remoteSource) {
             $queryParams['id'] = $remoteSource->id;
             $this->post('api/1/post', ['query' => $queryParams]);
         }
+    }
+
+    public function curablePosts($topicId, $lastUpdate = 0)
+    {
+        echo 'curables';
+        return $this->_getContent('curablePosts', $topicId, $lastUpdate);
+    }
+
+    public function curatedPosts($topicId, $lastUpdate = 0)
+    {
+        echo 'curated';
+        return $this->_getContent('curatedPosts', $topicId, $lastUpdate);
+    }
+
+    private function _getContent($node, $topicId, $lastUpdate)
+    {
+        if ($node != 'curablePosts' && $node != 'curatedPosts') {
+            return [];
+        }
+
+        $queryParam = str_replace("Posts", "", $node);
+        $queryParams = [
+            'id' => $topicId,
+            'since' => time() - (60 * 60 * $lastUpdate),
+            $queryParam => 100,
+        ];
+        $raw = $this->get('api/1/topic', [
+            'query' => $queryParams
+        ]);
+
+        $result = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
+        return $result->$node;
+
+        /*
+
+
+
+          $queryParams = [
+          // 'page' => $this->_pager,
+          'id' => $topicId,
+          'since' => time() - (60 * 60 * $lastUpdate)
+          ];
+          if ($resource == 'curablePosts') {
+          $queryParams['curable'] = 100;
+          $queryParams['curablePage'] = $this->_pager;
+          } elseif ($resource == 'curatedPosts') {
+          $queryParams['curated'] = 100;
+          }
+          $raw = $this->get('api/1/topic', [
+          'query' => $queryParams
+          ]);
+          $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
+          return $out->$from;
+         * 
+         */
     }
 
     public function getRawSource($topicId, $lastUpdate = 0)
@@ -139,34 +230,16 @@ class Client extends \GuzzleHttp\Client
         return $out;
     }
 
-    public function getSources($topicId, $lastUpdate = 0)
+    public function getPost($postId)
     {
-        return $this->_getContent('curablePosts', $topicId, $lastUpdate);
+        $data = \GuzzleHttp\json_decode($this->get('api/1/post', ['query' => ['id' => $postId]
+                ])->getBody()->getContents());
+        return $data;
     }
 
-    public function getScoops($topicId, $lastUpdate = 0)
+    public function getTags($postId)
     {
-        return $this->_getContent('curatedPosts', $topicId, $lastUpdate);
-    }
-
-    private function _getContent($from, $topicId, $lastUpdate)
-    {
-        $queryParams = [
-            // 'page' => $this->_pager,
-            'id' => $topicId,
-            'since' => time() - (60 * 60 * $lastUpdate)
-        ];
-        if ($from == 'curablePosts') {
-            $queryParams['curable'] = 150;
-            $queryParams['curablePage'] = $this->_pager;
-        } elseif ($from == 'curatedPosts') {
-            $queryParams['curated'] = 150;
-        }
-        $raw = $this->get('api/1/topic', [
-            'query' => $queryParams
-        ]);
-        $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
-        return $out->$from;
+        
     }
 
 }

@@ -2,6 +2,7 @@
 
 namespace humanized\scoopit\models;
 
+use humanized\scoopit\models\Tag;
 
 /**
  * This is the model class for table "scoop".
@@ -98,7 +99,6 @@ class Scoop extends \yii\db\ActiveRecord
      */
     public function setPostAttributes($post)
     {
-
         $attributes = [
             'id' => $post->id,
             'date_published' => substr($post->curationDate, 0, 10),
@@ -106,43 +106,106 @@ class Scoop extends \yii\db\ActiveRecord
         $this->setAttributes($attributes);
     }
 
-    public function linkTag($tag)
+    /**
+     * 
+     * @param type $tags
+     */
+    public function syncTags($tags)
     {
-        $tagId = $tag;
-        if (!is_numeric($tag)) {
-            $model = Tag::findOne(['name' => $tag]);
-            if (!isset($model)) {
-                return false;
-            }
-            $tagId = $model->id;
-        }
-        $model = new ScoopTag(['scoop_id' => $this->id, 'tag_id' => $tagId]);
 
+        $local = \yii\helpers\ArrayHelper::map($this->tags, 'name', 'id');
+        //import remote tags
+        foreach ($tags as $value) {
+            echo 'remote:' . $value;
+            $tag = Tag::sync(strtolower($value));
+            $this->linkTag($tag->id);
+            if (isset($local[strtolower($value)])) {
+                unset($local[strtolower($value)]);
+            }
+        }
+        //cleanup local tags
+        $this->unlinkTags(array_values($local));
+    }
+
+    /**
+     * 
+     * @param type $id id of tag to link to scoop
+     * @return type
+     */
+    public function linkTag($id)
+    {
+        $model = new ScoopTag(['scoop_id' => $this->id, 'tag_id' => $id]);
         if (isset($this->tagPostProcessor)) {
             $model->postProcessor = $this->tagPostProcessor;
         }
-        try {
-            if ($model->save()) {
-                if (php_sapi_name() == "cli") {
-                    echo 'New Topic linked to Tag' . "\n";
-                }
-            }
-        } catch (\Exception $ex) {
-            
-        }
+        return $model->save();
+    }
 
-        return true;
+    /**
+     * 
+     * @param type $data
+     * @param type $afterScoopFn
+     * @param type $afterTagFn
+     * @return type
+     */
+    public static function sync($data, $afterScoopFn = null, $afterTagFn = null)
+    {
+        //Synchronise local scoop record
+        $local = self::_syncScoop($data, $afterScoopFn);
+        //Prepare for tag postprocessing
+        if (isset($afterTagFn) && is_callable($afterTagFn)) {
+            $local->tagPostProcessor = $afterTagFn;
+        }
+        //Synchronise tags
+        $local->syncTags($data->tags);
+        return $local;
+    }
+
+    private static function _syncScoop($data, $fn)
+    {
+        $local = self::findOne($data->id);
+        if (!isset($local)) {
+            $local = new Scoop();
+            $local->setPostAttributes($data);
+        }
+        //Attach post-processor $fn variable is provided for afterScoop function
+        if (isset($fn) && is_callable($fn)) {
+            $local->postProcessor = $fn;
+        }
+        $local->save();
+        echo 'saved scoop' . $local->id;
+        return $local;
+    }
+
+    private function unlinkTags($ids)
+    {
+        foreach ($ids as $id) {
+            $this->unlinkTag($id);
+        }
+    }
+
+    public function unlinkTag($id)
+    {
+        return ScoopTag::find()->where(['scoop_id' => $this->id, 'tag_id' => $id])->one()->delete();
     }
 
     public function afterSave($insert, $changedAttributes)
     {
         //Run post-processor when set and not already postprocessing
         if (isset($this->postProcessor) && !$this->postProcessing) {
+            $this->postProcessing = true;
             $postprocess = $this->postProcessor;
             $postprocess($this, $insert, $changedAttributes);
         }
 
         return parent::afterSave($insert, $changedAttributes);
+    }
+
+    public function remote()
+    {
+
+        $client = new \humanized\scoopit\Client();
+        return $client->getPost($this->id);
     }
 
 }

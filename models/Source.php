@@ -145,35 +145,44 @@ class Source extends \yii\db\ActiveRecord
         $this->setAttributes($attributes);
     }
 
-    public function linkTopic($topicId)
+    public function linkTopic($mixed)
     {
-        $topic = Topic::findOne($topicId);
+
+        $topic = Topic::resolve($mixed);
         if (!isset($topic)) {
             return false;
         }
+        return SourceTopic::sync($topic->id, $this->id, $this->topicPostProcessor);
 
-        $out = [true, $topic];
-        try {
-            $model = new SourceTopic(['topic_id' => $topicId, 'source_id' => $this->id]);
-            if (isset($this->topicPostProcessor)) {
-                $model->postProcessor = $this->topicPostProcessor;
-            }
-            $out[0] = $model->save();
-        } catch (\Exception $ex) {
-            //  echo $ex->getMessage();
-            $out[0] = false;
-        }
-        return $out;
+
+        /*
+
+          $out = [true, $topic];
+          try {
+          $model = new SourceTopic(['topic_id' => $topicId, 'source_id' => $this->id]);
+          if (isset($this->topicPostProcessor)) {
+          $model->postProcessor = $this->topicPostProcessor;
+          }
+          $out[0] = $model->save();
+          } catch (\Exception $ex) {
+          //  echo $ex->getMessage();
+          $out[0] = false;
+          }
+          return $out;
+         * 
+         */
     }
 
-    public function hasTopic($topicId)
+    /**
+     * 
+     * @param type $topicId
+     * @return boolean
+     */
+    public function hasTopic($mixed)
     {
-        foreach ($this->topics as $topic) {
-            if ($topic->id == $topicId) {
-                return true;
-            }
-        }
-        return false;
+        $topic = Topic::resolve($mixed);
+        $model = SourceTopic::find()->where(['topic_id' => $topic->id, 'source_id' => $this->id])->one();
+        return isset($model);
     }
 
     /**
@@ -189,18 +198,24 @@ class Source extends \yii\db\ActiveRecord
                 ])->one();
     }
 
+    /**
+     * 
+     * @param type $item
+     * @return \humanized\scoopit\models\Source
+     */
     public static function create($item)
     {
 
         $model = new Source();
         $model->setPostAttributes($item);
-        $model->save();
+
         try {
             if ($model->save()) {
+       
                 return $model;
             }
         } catch (\Exception $ex) {
-            
+            var_dump($model->errors);
         }
         return null;
     }

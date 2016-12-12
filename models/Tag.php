@@ -64,6 +64,27 @@ class Tag extends \yii\db\ActiveRecord
         return $this->hasMany(Topic::className(), ['id' => 'topic_id'])->viaTable('scoopit_topic_tag', ['tag_id' => 'id']);
     }
 
+    public static function sync($value)
+    {
+        $model = self::resolve(strtolower($value));
+        if (!isset($model)) {
+            $model = new Tag(['name' => strtolower($value)]);
+            $model->save();
+        }
+        return $model;
+    }
+
+    /**
+     * Returns a topic model by it's unique id or it's unique name
+     * 
+     * @param integer|string $mixed - Numeric topic-id or the topic-name 
+     * @return Topic - the corresponding topic model
+     */
+    public static function resolve($mixed)
+    {
+        return self::findOne(!is_numeric($mixed) ? ['name' => $mixed] : $mixed);
+    }
+
     public function getRelatedNews()
     {
         return [];

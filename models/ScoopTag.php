@@ -37,6 +37,7 @@ class ScoopTag extends \yii\db\ActiveRecord
         return [
             [['scoop_id', 'tag_id'], 'required'],
             [['scoop_id', 'tag_id'], 'integer'],
+            [['tag_id', 'scoop_id'], 'unique', 'targetAttribute' => ['tag_id', 'scoop_id']],
             [['scoop_id'], 'exist', 'skipOnError' => true, 'targetClass' => Scoop::className(), 'targetAttribute' => ['scoop_id' => 'id']],
             [['tag_id'], 'exist', 'skipOnError' => true, 'targetClass' => Tag::className(), 'targetAttribute' => ['tag_id' => 'id']],
         ];
@@ -69,6 +70,31 @@ class ScoopTag extends \yii\db\ActiveRecord
         return $this->hasOne(Tag::className(), ['id' => 'tag_id']);
     }
 
+    /**
+     * Synchronise tags for a given scoop
+     * 
+     * @param array<mixed> $data Remote post object 
+     * @param type $fn 
+     * @return Scoop
+     */
+    public static function sync($data, $fn = null)
+    {
+        //get local tags
+        $scoop = Scoop::findOne($data->id);
+
+        $local = self::findOne($data->id);
+        if (!isset($local)) {
+            $local = new Scoop();
+            $local->setPostAttributes($data);
+        }
+        //Attach post-processor $fn variable is provided
+        if (isset($fn) && is_callable($fn)) {
+            $local->postProcessor = $fn;
+        }
+        $local->save();
+        return $local;
+    }
+
     public function afterSave($insert, $changedAttributes)
     {
 
@@ -78,6 +104,18 @@ class ScoopTag extends \yii\db\ActiveRecord
         }
 
         return parent::afterSave($insert, $changedAttributes);
+    }
+
+    public function delete()
+    {
+        $tag = $this->tag;
+        if (parent::delete()) {
+            if (count(ScoopTag::findAll(['tag_id' => $tag->id])) == 0) {
+                return $tag->delete();
+            }
+            return true;
+        }
+        return false;
     }
 
 }

@@ -3,6 +3,7 @@
 namespace humanized\scoopit\models;
 
 use Yii;
+use humanized\scoopit\Client;
 
 /**
  * This is the model class for table "scoopit_topic".
@@ -140,6 +141,64 @@ class Topic extends \yii\db\ActiveRecord
     public function getTags()
     {
         return $this->hasMany(Tag::className(), ['id' => 'tag_id'])->viaTable('scoopit_topic_tag', ['topic_id' => 'id']);
+    }
+
+    /**
+     * Returns a topic model by it's unique id or it's unique name
+     * 
+     * @param integer|string $mixed - Numeric topic-id or the topic-name 
+     * @return Topic - the corresponding topic model
+     */
+    public static function resolve($mixed)
+    {
+        return Topic::findOne(!is_numeric($mixed) ? ['name' => $mixed] : $mixed);
+    }
+
+    public static function map($mixed, $value)
+    {
+        $model = self::resolve($mixed);
+        //return false if topic not found
+        if (!isset($model)) {
+            return false;
+        }
+    }
+
+    /**
+     * 
+     * @param type $publish
+     * @return boolean
+     */
+    public static function syncAll($publish)
+    {
+        $local = \yii\helpers\ArrayHelper::map(Topic::find()->asArray()->all(), 'id', 'name');
+        $client = new Client();
+        $remote = $client->getTopics(TRUE);
+        foreach ($remote as $data) {
+            self::sync($data, $publish);
+            unset($local[$data['id']]);
+        }
+        //Cleanup redundant local topics if required
+        if (count($local) != 0) {
+            return Topic::deleteAll(['in', 'id', $local]);
+        }
+
+        return true;
+    }
+
+    public static function sync($data, $publish)
+    {
+        $model = self::findOne($data['id']);
+
+        //Register remote topic-name change
+        if (isset($model) && $model->name != $data['name']) {
+            $model->name = $data['name'];
+            $model->save(false);
+        }
+        //Create local topic
+        if (!isset($model)) {
+            $model = (new Topic(['id' => $data['id'], 'name' => $data['name']]))->save();
+        }
+        return $model;
     }
 
     public function linkKeyword($keyword)

@@ -24,7 +24,7 @@ class m160314_205688_scoopit extends Migration
         $this->createTable('scoopit_topic', [
             'id' => 'BIGINT NOT NULL',
             'is_published' => $this->boolean()->defaultValue(FALSE),
-            'name' => $this->string(255)->unique(),
+            'name' => $this->string(255)->unique()->notNull(),
                 ], $this->tableOptions);
         $this->addPrimaryKey('pk_topic', 'scoopit_topic', 'id');
 
@@ -55,7 +55,7 @@ class m160314_205688_scoopit extends Migration
         $this->addPrimaryKey('pk_source', 'scoopit_source', 'id');
         $this->createTable('scoopit_tag', [
             'id' => $this->primaryKey(),
-            'name' => $this->string(255)->unique(),
+            'name' => $this->string(255)->unique()->notNull(),
                 ], $this->tableOptions);
         $this->createTable('scoopit_scoop', [
             'id' => 'BIGINT', //Provided by scoop.it for deduplication check,

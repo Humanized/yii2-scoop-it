@@ -1,9 +1,9 @@
-# yii2-scoopit
-Scoop it
+# Yii2 Scoop.it - README
+
 
 [![Yii2](https://img.shields.io/badge/Powered_by-Yii_Framework-green.svg?style=flat)](http://www.yiiframework.com/)
 
-Various interfaces dealing with the Scoop.it API
+This package proposes a data model for importing and synchronising content locally managed through Scoop.it account
 
 ## Features
 
@@ -60,10 +60,13 @@ Ensure the following lines are accessible as local parameters:
     [
         // Add the base URI used to connect to here
         'remoteUri' => 'https://acme-corp.scoop.it/api/1/',
-        // Add your own Consumer Key here
-        'remoteConsumerKey' => '',
-        // Add your own Secret Key here
-        'remoteSecretKey' => '',
+        'authorisationCallbackUri' => "path-to-website",
+        // Scoop.it Consumer Key/Secret (mandatory for both anonymous & authenticated mode)
+        'consumerKey' => '',
+        'consumerSecret' => '',
+        // Scoop.it Consumer Key/Secret (mandatory for both anonymous & authenticated mode)
+        'token' => '',
+        'tokenSecret' => '',
     ],
 ],
 ```
