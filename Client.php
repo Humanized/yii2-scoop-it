@@ -152,9 +152,10 @@ class Client extends \GuzzleHttp\Client
         return $importTopic;
     }
 
-    public function deleteScoop($topicId, $postId)
+    public function deleteScoop($postId)
     {
-        
+        $queryParams = ['action' => 'delete', 'id' => $postId];
+        $this->post('api/1/post', ['query' => $queryParams]);
     }
 
     public function autoScoop($topicId, $lastUpdate)

@@ -97,13 +97,14 @@ class DataController extends Controller
         if ($this->_autoScoop) {
             $this->_autoScoop($lastUpdate);
         }
-        /*
+
         if ($this->_saveSuggestions) {
             $this->_importSuggestions($lastUpdate);
         }
-         * 
-         */
+
         $this->_importScoops($lastUpdate);
+
+
 
 
         return 0;
@@ -183,9 +184,23 @@ class DataController extends Controller
     {
         $this->stdout("Saving scoops to local storage \n");
         foreach ($this->_client->curatedPosts($this->_topic->id, $lastUpdate)as $data) {
-            $this->stdout("\n Importing scoop: ");
+            $tags = $data->tags;
+            $rm = in_array('!rm', $data->tags);
+            $this->stdout("\n" . ($rm ? 'removing' : 'importing') . " scoop: ");
             $this->stdout($data->url . "\n", Console::FG_GREEN, Console::BOLD);
-            $this->_synchroniseScoop($data);
+            if (!$rm) {
+                $this->_synchroniseScoop($data);
+            }
+            if ($rm) {
+
+                //Remove Local Scoop Topic Link
+                $source = Source::findItem($data);
+                if (isset($source)) {
+                    \humanized\scoopit\models\SourceTopic::deleteAll(['topic_id' => $this->_topic->id, 'source_id' => $source->id]);
+                }
+                //Remove Remote Scoop
+                $this->_client->deleteScoop($source->id);
+            }
         }
     }
 
@@ -245,6 +260,8 @@ class DataController extends Controller
             return 1;
         }
         //create-or-retrieve updated local record storing publication meta-data and tags
+
+
         $scoop = Scoop::sync($data, $this->_getPostProcessor('afterScoop'), $this->_getPostProcessor('afterScoopTag'));
         if (!isset($scoop)) {
             $this->stderr('Unhandled Exception: Scoop could not be created or retrieved');
