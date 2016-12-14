@@ -84,7 +84,9 @@ class SourceTopic extends \yii\db\ActiveRecord
         $model = self::find()->where($data)->one();
         if (!isset($model)) {
             $model = new SourceTopic(array_merge($data, ["postProcessor" => $fn]));
-            $model->save();
+            if ($model->save()) {
+                
+            }
         }
         return $model;
     }

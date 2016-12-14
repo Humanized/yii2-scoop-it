@@ -192,14 +192,13 @@ class DataController extends Controller
                 $this->_synchroniseScoop($data);
             }
             if ($rm) {
-
                 //Remove Local Scoop Topic Link
                 $source = Source::findItem($data);
                 if (isset($source)) {
                     \humanized\scoopit\models\SourceTopic::deleteAll(['topic_id' => $this->_topic->id, 'source_id' => $source->id]);
                 }
-                //Remove Remote Scoop
-                $this->_client->deleteScoop($source->id);
+                //Remove Remote Scoop (notice we remove by id of remote)
+                //  $this->_client->deleteScoop($data->id);
             }
         }
     }

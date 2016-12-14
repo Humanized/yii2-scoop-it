@@ -147,7 +147,6 @@ class Source extends \yii\db\ActiveRecord
 
     public function linkTopic($mixed)
     {
-
         $topic = Topic::resolve($mixed);
         if (!isset($topic)) {
             return false;
