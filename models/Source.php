@@ -145,13 +145,13 @@ class Source extends \yii\db\ActiveRecord
         $this->setAttributes($attributes);
     }
 
-    public function linkTopic($mixed)
+    public function linkTopic($mixed, $isRemote = false)
     {
         $topic = Topic::resolve($mixed);
         if (!isset($topic)) {
             return false;
         }
-        return SourceTopic::sync($topic->id, $this->id, $this->topicPostProcessor);
+        return SourceTopic::sync($topic->id, $this->id, $isRemote, $this->topicPostProcessor);
 
 
         /*
@@ -210,7 +210,7 @@ class Source extends \yii\db\ActiveRecord
 
         try {
             if ($model->save()) {
-       
+
                 return $model;
             }
         } catch (\Exception $ex) {

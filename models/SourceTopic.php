@@ -33,8 +33,11 @@ class SourceTopic extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
+            
             [['source_id', 'topic_id'], 'required'],
             [['source_id', 'topic_id'], 'integer'],
+         //   [['is_remote'], 'boolean'],
+         //   ['is_remote', 'default', 'value' => false],
             [['source_id', 'topic_id'], 'unique', 'targetAttribute' => ['source_id', 'topic_id']],
             [['source_id'], 'exist', 'skipOnError' => true, 'targetClass' => Source::className(), 'targetAttribute' => ['source_id' => 'id']],
             [['topic_id'], 'exist', 'skipOnError' => true, 'targetClass' => Topic::className(), 'targetAttribute' => ['topic_id' => 'id']],
@@ -68,26 +71,32 @@ class SourceTopic extends \yii\db\ActiveRecord
         return $this->hasOne(Topic::className(), ['id' => 'topic_id']);
     }
 
-    public static function sync($topicId, $sourceId, $afterTopicLinkFn = null)
+    public static function sync($topicId, $sourceId, $isRemote = false, $afterTopicLinkFn = null)
     {
-        $model = self::_syncModel($topicId, $sourceId, $afterTopicLinkFn);
+        $model = self::_syncModel($topicId, $sourceId, $isRemote, $afterTopicLinkFn);
         if (isset($model)) {
             return $model;
         }
         return false;
     }
 
-    private static function _syncModel($topicId, $sourceId, $fn)
+    private static function _syncModel($topicId, $sourceId, $isRemote, $fn)
     {
         //Get/Create link between scoop and topic
         $data = ['topic_id' => $topicId, 'source_id' => $sourceId];
         $model = self::find()->where($data)->one();
         if (!isset($model)) {
-            $model = new SourceTopic(array_merge($data, ["postProcessor" => $fn]));
-            if ($model->save()) {
-                
-            }
+            $model = new SourceTopic(array_merge($data));
         }
+        /*
+        //Remote hacking #1
+        if ($isRemote) {
+            $model->is_remote = true;
+        }
+         * 
+         */
+        $model->postProcessor = $fn;
+        $model->save();
         return $model;
     }
 

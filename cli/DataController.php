@@ -28,6 +28,9 @@ use yii\helpers\Console;
  */
 class DataController extends Controller
 {
+
+    public $verbose = false;
+
     /**
      * ************************************************************************
      *                      Private run-time variables
@@ -57,6 +60,16 @@ class DataController extends Controller
      * @var boolean 
      */
     private $_saveSuggestions = false;
+
+    public function options()
+    {
+        return ['verbose'];
+    }
+
+    public function optionAliases()
+    {
+        return ['v' => 'verbose'];
+    }
 
     /**
      * ************************************************************************
@@ -104,9 +117,6 @@ class DataController extends Controller
 
         $this->_importScoops($lastUpdate);
 
-
-
-
         return 0;
     }
 
@@ -130,7 +140,9 @@ class DataController extends Controller
         }
         $this->_topic = Topic::resolve($topicId);
         if (NULL === $this->_topic) {
-            $this->stdout("No Such Topic \n");
+            if ($this->verbose) {
+                $this->stdout("No Such Topic \n");
+            }
             return 1;
         }
         //Configuration parameters
@@ -139,13 +151,15 @@ class DataController extends Controller
         $this->_saveSuggestions = (isset($this->module->params['saveSuggestions']) &&
                 $this->module->params['saveSuggestions']);
 
-        //Print output
-        $this->stdout('processing data for topic: ');
-        $this->stdout($this->_topic->name . "--autoscoop: " .
-                ($this->_autoScoop ? "en" : "dis") .
-                "abled, --savesuggestions" .
-                ($this->_autoScoop ? "en" : "dis") .
-                "abled\n", Console::FG_GREEN, Console::BOLD);
+        if ($this->verbose) {
+            //Print output
+            $this->stdout('processing data for topic: ');
+            $this->stdout($this->_topic->name . "--autoscoop: " .
+                    ($this->_autoScoop ? "en" : "dis") .
+                    "abled, --savesuggestions" .
+                    ($this->_autoScoop ? "en" : "dis") .
+                    "abled\n", Console::FG_GREEN, Console::BOLD);
+        }
     }
 
     /**
@@ -157,7 +171,9 @@ class DataController extends Controller
      */
     private function _autoscoop($lastUpdate)
     {
-        $this->stdout("auto-scoop condition satisfied \n");
+        if ($this->verbose) {
+            $this->stdout("auto-scoop condition satisfied \n");
+        }
         $this->_client->autoScoop($this->_topic->id, $lastUpdate);
     }
 
@@ -170,8 +186,10 @@ class DataController extends Controller
     {
         $this->stdout("Saving suggestions to local storage \n");
         foreach ($this->_client->curablePosts($this->_topic->id, $lastUpdate) as $data) {
-            $this->stdout("\n Importing suggestion: ");
-            $this->stdout($data->url . "\n", Console::FG_GREEN, Console::BOLD);
+            if ($this->verbose) {
+                $this->stdout("\n Importing suggestion: ");
+                $this->stdout($data->url . "\n", Console::FG_GREEN, Console::BOLD);
+            }
             $this->_importSuggestion($data);
         }
     }
@@ -182,12 +200,16 @@ class DataController extends Controller
      */
     private function _importScoops($lastUpdate)
     {
-        $this->stdout("Saving scoops to local storage \n");
+        if ($this->verbose) {
+            $this->stdout("Saving scoops to local storage \n");
+        }
         foreach ($this->_client->curatedPosts($this->_topic->id, $lastUpdate)as $data) {
             $tags = $data->tags;
             $rm = in_array('!rm', $data->tags);
-            $this->stdout("\n" . ($rm ? 'removing' : 'importing') . " scoop: ");
-            $this->stdout($data->url . "\n", Console::FG_GREEN, Console::BOLD);
+            if ($this->verbose) {
+                $this->stdout("\n" . ($rm ? 'removing' : 'importing') . " scoop: ");
+                $this->stdout($data->url . "\n", Console::FG_GREEN, Console::BOLD);
+            }
             if (!$rm) {
                 $this->_synchroniseScoop($data);
             }
@@ -239,9 +261,8 @@ class DataController extends Controller
         }
         //Setup topic postprocessor
         $local->topicPostProcessor = $this->_getPostProcessor('afterTopicLink');
-        //Link Suggestion to topic
-        $local->linkTopic($this->_topic->id);
-
+        //Link Suggestion to topic and force remote flag
+        $local->linkTopic($this->_topic->id, $data->id);
 
         if (isset($this->module->params['postProcessorClass']) && method_exists($this->module->params['postProcessorClass'], 'afterCurableSynchronised')) {
             call_user_func([$this->module->params['postProcessorClass'], 'afterCurableSynchronised'], $this->_topic, $local);
@@ -286,119 +307,6 @@ class DataController extends Controller
             return [$this->module->params['postProcessorClass'], $fnName];
         }
         return null;
-    }
-
-    /**
-     * ************************************************************************
-     *              Legacy Code - Not maintained, for review and deletion
-     * ************************************************************************
-     * 
-     */
-
-    /**
-     * 
-     * @param type $item
-     * @param type $topicId
-     * @param type $scooped
-     */
-    private function _sync($item, $topic, $scooped = TRUE)
-    {
-        $topicId = $topic->id;
-        $this->stdout("\n Processing Source: ");
-        $this->stdout($item->url . "\n", Console::FG_GREEN, Console::BOLD);
-
-        $source = Source::findItem($item);
-        if (!isset($source)) {
-            $source = Source::create($item);
-        }
-        if (isset($source)) {
-            $this->_linkTopic($source, $topicId);
-            if ($scooped) {
-                $this->_syncScoop($item);
-                $this->_syncScoopTags($item);
-            }
-            if (isset($this->module->params['postProcessorClass']) && method_exists($this->module->params['postProcessorClass'], 'afterSync')) {
-                call_user_func([$this->module->params['postProcessorClass'], 'afterSync'], $topic, $source);
-            }
-        }
-        return $source;
-    }
-
-    private function _synchroniseScoops($lastUpdate)
-    {
-        //Syncronise Scoops
-        $scoops = $this->_client->getScoops($this->_topic, $lastUpdate);
-        $this->stdout("saving scoops to local storage \n");
-        foreach ($scoops as $scoop) {
-            $model = $this->_sync($scoop, $this->_topic, TRUE);
-        }
-    }
-
-    private function _initPostProcessor($fnName, $model, $postProcessor)
-    {
-        if (isset($this->module->params['postProcessorClass']) && method_exists($this->module->params['postProcessorClass'], $fnName)) {
-            $fn = [$this->module->params['postProcessorClass'], $fnName];
-            $model->$postProcessor = $fn;
-        }
-    }
-
-    private function _linkTopic($model, $topicId)
-    {
-        $this->_initPostProcessor('afterTopicLink', $model, 'topicPostProcessor');
-        $topicData = $model->linkTopic($topicId);
-        $topic = $topicData[1];
-        $this->stdout((!$topicData[0] ? 'Already ' : '') . 'Linked to topic: ', (!$topicData[0] ? Console::FG_RED : Console::FG_GREEN), Console::BOLD);
-        $this->stdout($topic->name . "\n");
-    }
-
-    private function _syncScoop($item)
-    {
-        $model = Scoop::findOne($item->id);
-        if (!isset($model)) {
-            $model = new Scoop();
-            $this->_initPostProcessor('afterScoop', $model, 'postProcessor');
-            $model->setPostAttributes($item);
-            try {
-                if ($model->save()) {
-                    $this->stdout('Scoop Imported' . "\n");
-                    return;
-                }
-                //   VarDumper::dump($model->errors);
-            } catch (\Exception $ex) {
-                
-            }
-        }
-    }
-
-    private function _syncScoopTags($item)
-    {
-        $scoop = Scoop::findOne($item->id);
-        if (isset($scoop)) {
-            $this->_initPostProcessor('afterScoopTag', $scoop, 'tagPostProcessor');
-            foreach ($item->tags as $tag) {
-                $model = Tag::findOne(['name' => $tag]);
-                if (!isset($model)) {
-                    $model = new Tag(['name' => $tag]);
-                    $model->save();
-                }
-                $scoop->linkTag($model->id);
-            }
-        }
-    }
-
-    public function actionDropAll()
-    {
-        Source::deleteAll('1=1');
-    }
-
-    public function peek($topicId, $mode = 1)
-    {
-        $topic = \humanized\scoopit\models\Topic::findOne(!is_numeric($topicId) ? ['name' => $topicId] : $topicId);
-        if (NULL === $topic) {
-            $this->stdout("No Such Topic \n");
-            return 1;
-        }
-        $client = new Client();
     }
 
 }

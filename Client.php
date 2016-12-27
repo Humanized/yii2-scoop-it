@@ -100,13 +100,13 @@ class Client extends \GuzzleHttp\Client
     {
 
         $this->_pager +=1;
-        echo 'pager-set:' . $this->_pager . "\n";
+        //     echo 'pager-set:' . $this->_pager . "\n";
     }
 
     public function resetPager()
     {
         $this->_pager = 1;
-        echo 'pager-set:' . $this->_pager . "\n";
+        //   echo 'pager-set:' . $this->_pager . "\n";
     }
 
     public function getTopics($filerOutput = FALSE)
@@ -170,13 +170,13 @@ class Client extends \GuzzleHttp\Client
 
     public function curablePosts($topicId, $lastUpdate = 0)
     {
-        echo 'curables';
+        // echo 'curables';
         return $this->_getContent('curablePosts', $topicId, $lastUpdate);
     }
 
     public function curatedPosts($topicId, $lastUpdate = 0)
     {
-        echo 'curated';
+        // echo 'curated';
         return $this->_getContent('curatedPosts', $topicId, $lastUpdate);
     }
 
@@ -185,11 +185,12 @@ class Client extends \GuzzleHttp\Client
         if ($node != 'curablePosts' && $node != 'curatedPosts') {
             return [];
         }
+        $since = time() - (24 * 60 * 60 * $lastUpdate);
 
         $queryParam = str_replace("Posts", "", $node);
         $queryParams = [
             'id' => $topicId,
-            'since' => time() - (60 * 60 * $lastUpdate),
+            'since' => $since * 1000, //*1000 for 64-bit
             $queryParam => 100,
         ];
         $raw = $this->get('api/1/topic', [
@@ -198,29 +199,6 @@ class Client extends \GuzzleHttp\Client
 
         $result = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
         return $result->$node;
-
-        /*
-
-
-
-          $queryParams = [
-          // 'page' => $this->_pager,
-          'id' => $topicId,
-          'since' => time() - (60 * 60 * $lastUpdate)
-          ];
-          if ($resource == 'curablePosts') {
-          $queryParams['curable'] = 100;
-          $queryParams['curablePage'] = $this->_pager;
-          } elseif ($resource == 'curatedPosts') {
-          $queryParams['curated'] = 100;
-          }
-          $raw = $this->get('api/1/topic', [
-          'query' => $queryParams
-          ]);
-          $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
-          return $out->$from;
-         * 
-         */
     }
 
     public function getRawSource($topicId, $lastUpdate = 0)

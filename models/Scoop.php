@@ -116,7 +116,7 @@ class Scoop extends \yii\db\ActiveRecord
         $local = \yii\helpers\ArrayHelper::map($this->tags, 'name', 'id');
         //import remote tags
         foreach ($tags as $value) {
-            echo 'remote:' . $value;
+            //   echo 'remote:' . $value;
             $tag = Tag::sync(strtolower($value));
             $this->linkTag($tag->id);
             if (isset($local[strtolower($value)])) {
@@ -173,7 +173,7 @@ class Scoop extends \yii\db\ActiveRecord
             $local->postProcessor = $fn;
         }
         $local->save();
-        echo 'saved scoop' . $local->id;
+        //   echo 'saved scoop' . $local->id;
         return $local;
     }
 
