@@ -10,18 +10,20 @@ namespace humanized\scoopit\cli;
 
 use Yii;
 use yii\console\Controller;
-use humanized\scoopit\Client;
-use humanized\scoopit\models\Source;
-use humanized\scoopit\models\Scoop;
-use humanized\scoopit\models\Tag;
-use humanized\scoopit\models\Topic;
 use yii\helpers\Console;
+use humanized\scoopit\Client;
+use humanized\scoopit\components\TagHelper;
+use humanized\scoopit\models\Source;
+use humanized\scoopit\models\SourceTopic;
+use humanized\scoopit\models\Scoop;
+use humanized\scoopit\models\Topic;
 
 /**
- * Provides an interface to locally synchronise remote scoop.it topic data
+ * Provides an interface to synchronise remote and local scoop.it topic content
+ *
  *
  * @name Scoop.it CLI Data Synchronisation Tool
- * @version 0.1
+ * @version 1.0
  * @author Jeffrey Geyssens <jeffrey@humanized.be>
  * @package yii2-scoopit
  *
@@ -36,6 +38,12 @@ class DataController extends Controller
      *                      Private run-time variables
      * ************************************************************************
      */
+
+    /**
+     *
+     * @var string 
+     */
+    private $_postprocessorClass = null;
 
     /**
      *
@@ -61,6 +69,37 @@ class DataController extends Controller
      */
     private $_saveSuggestions = false;
 
+    /**
+     *
+     * @var boolean 
+     */
+    private $_enableRmTag = true;
+
+    /**
+     *
+     * @var integer 
+     */
+    private $_rmLifetime = 0;
+
+    /**
+     *
+     * @var boolean 
+     */
+    private $_enableDoublePostTags = false;
+
+    /**
+     *
+     * @var boolean 
+     */
+    private $_saveDuplicateTagState = false;
+
+    /**
+     *
+     * @var integer[][] 
+     */
+    private $_duplicates = [];
+    protected $switches = ['autoscoop', 'saveSuggestions', 'enableRmTag', 'enableDoublePostTags', 'saveDuplicateTagState'];
+
     public function options()
     {
         return ['verbose'];
@@ -78,44 +117,46 @@ class DataController extends Controller
      */
 
     /**
-     * Acquire content for all topics available through remote Scoop.it account. 
-     * Runs the synchronise actions on all topics fetched.
-     * Requires local copy of topic to exist (see setup action).
+     * Acquire remote Scoop.it content for all locally stored topics. 
      * 
      * @param type $lastUpdate
      * @return int
      */
-    public function actionIndex($lastUpdate)
+    public function actionIndex($lastUpdate = 1)
     {
         $this->_client = new Client();
-        $topics = $this->_client->getTopics(TRUE);
+        $topics = Topic::find()->all();
         foreach ($topics as $topic) {
-            $this->actionSynchronise($topic['id'], $lastUpdate);
+            $this->actionSynchronise($topic->id, $lastUpdate);
         }
         return 0;
     }
 
     /**
      * 
-     * Acquire content for specified topics.
+     * Acquire remote Scoop.it content for specified locally stored topic. 
      *  
      * 
      * @param string|int $topic
      * @param type $lastUpdate
      * @return int
      */
-    public function actionSynchronise($topicId, $lastUpdate)
+    public function actionSynchronise($topicId, $lastUpdate = 1)
     {
-        $this->_initSync($topicId);
+        if (false == $this->_initSynchronise($topicId)) {
+            return 1;
+        }
         if ($this->_autoScoop) {
             $this->_autoScoop($lastUpdate);
         }
-
         if ($this->_saveSuggestions) {
-            $this->_importSuggestions($lastUpdate);
+            $this->_importCurable($lastUpdate);
         }
 
-        $this->_importScoops($lastUpdate);
+        if ($this->_enableRmTag) {
+            $this->_processRemoved();
+        }
+        $this->_synchroniseCurated($lastUpdate);
 
         return 0;
     }
@@ -128,38 +169,75 @@ class DataController extends Controller
 
     /**
      * Private function to initialise run-time (private) variables
-     * along with appropriate per-topic output
      * 
      * @param type $topicId
      * @return int
      */
-    private function _initSync($topicId)
+    private function _initSynchronise($topicId)
     {
+        if (!$this->_initSynchroniseVars($topicId)) {
+            return false;
+        }
+        if ($this->verbose) {
+            $this->_initSynchroniseOut();
+        }
+        return true;
+    }
+
+    private function _initSynchroniseVars($topicId)
+    {
+        if (!isset($this->_postprocessorClass) && isset($this->module->params['postprocessorClass'])) {
+            $this->_postprocessorClass = $this->module->params['postprocessorClass'];
+        }
         if (!isset($this->_client)) {
             $this->_client = new Client();
         }
         $this->_topic = Topic::resolve($topicId);
-        if (NULL === $this->_topic) {
+
+        if (!isset($this->_topic)) {
             if ($this->verbose) {
-                $this->stdout("No Such Topic \n");
+                $this->stderr("Topic " . (is_integer($topicId) ? "#" : "" . $topicId) . " not found in local database \n", Console::FG_YELLOW, Console::BOLD);
             }
-            return 1;
+            return false;
         }
-        //Configuration parameters
+        //Enchancement configuration parameters
         $this->_autoScoop = (isset($this->module->params['autoScoopTopicCondition']) &&
                 call_user_func($this->module->params['autoScoopTopicCondition'], $this->_topic));
-        $this->_saveSuggestions = (isset($this->module->params['saveSuggestions']) &&
-                $this->module->params['saveSuggestions']);
 
-        if ($this->verbose) {
-            //Print output
-            $this->stdout('processing data for topic: ');
-            $this->stdout($this->_topic->name . "--autoscoop: " .
-                    ($this->_autoScoop ? "en" : "dis") .
-                    "abled, --savesuggestions" .
-                    ($this->_autoScoop ? "en" : "dis") .
-                    "abled\n", Console::FG_GREEN, Console::BOLD);
+        foreach ($this->switches as $switch) {
+            if ($switch != "autoscoop") {
+                $switchVar = '_' . $switch;
+                $this->$switchVar = (isset($this->module->params[$switch]) &&
+                        $this->module->params[$switch]);
+            }
         }
+        if ($this->_enableRmTag) {
+            $this->_rmLifetime = isset($this->module->params['rmLifetime']) ? $this->module->params['rmLifetime'] : 0;
+        }
+        return true;
+    }
+
+    private function _initSynchroniseOut()
+    {
+        //Print output
+        $this->stdout("Processing data for topic: \t");
+        $this->stdout($this->_topic->name . "\n", Console::FG_CYAN, Console::BOLD);
+
+        $this->stdout("Postprocessor Class: \t\t");
+        !isset($this->_postprocessorClass) ? $this->stdout("not set", Console::FG_RED, Console::BOLD) : $this->stdout($this->_postprocessorClass, Console::FG_CYAN, Console::BOLD);
+        $this->stdout("\n");
+
+        $this->stdout("Configuration Options:\t\t");
+        foreach ($this->switches as $switch) {
+            $this->stdout("--$switch=");
+            $switchVar = '_' . $switch;
+            $isEnabled = isset($this->$switchVar) && $this->$switchVar ? true : false;
+            $this->stdout(($isEnabled ? "en" : "dis") . "abled ", ($isEnabled ? Console::FG_GREEN : Console::FG_RED), Console::BOLD);
+            if (($switch == 'enableRmTag') && $isEnabled) {
+                $this->stdout("(keep-alive=$this->_rmLifetime)");
+            }
+        }
+        $this->stdout("\n");
     }
 
     /**
@@ -171,142 +249,129 @@ class DataController extends Controller
      */
     private function _autoscoop($lastUpdate)
     {
-        if ($this->verbose) {
-            $this->stdout("auto-scoop condition satisfied \n");
-        }
+        !$this->verbose ? '' : $this->stdout("Curating unpublished posts on remote system", Console::FG_CYAN, Console::BOLD);
         $this->_client->autoScoop($this->_topic->id, $lastUpdate);
+        !$this->verbose ? '' : $this->stdout("\n");
     }
 
     /**
-     * Private method for locally importing topiccal content suggested
+     * Private method for local import of topical posts that are curable (unpublished)
      * When saveSuggestions is enabled as specified by config
      * @param type $lastUpdate
      */
-    private function _importSuggestions($lastUpdate)
+    private function _importCurable($lastUpdate)
     {
-        $this->stdout("Saving suggestions to local storage \n");
-        foreach ($this->_client->curablePosts($this->_topic->id, $lastUpdate) as $data) {
-            if ($this->verbose) {
-                $this->stdout("\n Importing suggestion: ");
-                $this->stdout($data->url . "\n", Console::FG_GREEN, Console::BOLD);
-            }
-            $this->_importSuggestion($data);
+        !$this->verbose ? '' : $this->stdout("Importing curable posts", Console::FG_CYAN, Console::BOLD);
+        foreach ($this->_client->curablePosts($this->_topic->id, $lastUpdate) as $post) {
+            !$this->verbose ? '' : $this->_processPostOut($post, "Importing curable post");
+            Source::importPost($post, $this->_postprocessorClass);
         }
+        !$this->verbose ? '' : $this->stdout("\n");
     }
 
     /**
-     * Private method for locally synchronising topical content published
-     * @param type $lastUpdate
+     * 
      */
-    private function _importScoops($lastUpdate)
+    private function _processRemoved()
     {
-        if ($this->verbose) {
-            $this->stdout("Saving scoops to local storage \n");
+        !$this->verbose ? '' : $this->stdout('Processing removed posts', Console::FG_CYAN, Console::BOLD);
+        foreach ($this->_client->taggedPosts($this->_topic->id, '#rm') as $post) {
+            !$this->verbose ? '' : $this->_processPostOut($post, "Processing removed post");
+            $this->_processRemovedLocal($post);
+
+            $this->_processRemovedRemote($post);
         }
-        foreach ($this->_client->curatedPosts($this->_topic->id, $lastUpdate)as $data) {
-            $tags = $data->tags;
-            $rm = in_array('!rm', $data->tags);
-            if ($this->verbose) {
-                $this->stdout("\n" . ($rm ? 'removing' : 'importing') . " scoop: ");
-                $this->stdout($data->url . "\n", Console::FG_GREEN, Console::BOLD);
-            }
-            if (!$rm) {
-                $this->_synchroniseScoop($data);
-            }
-            if ($rm) {
-                //Remove Local Scoop Topic Link
-                $source = Source::findItem($data);
-                if (isset($source)) {
-                    \humanized\scoopit\models\SourceTopic::deleteAll(['topic_id' => $this->_topic->id, 'source_id' => $source->id]);
-                }
-                //Remove Remote Scoop (notice we remove by id of remote)
-                //  $this->_client->deleteScoop($data->id);
-            }
-        }
+        !$this->verbose ? '' : $this->stdout("\n");
     }
 
-    /*
-     * ************************************************************************
-     *       Private helper functions for individual post synchronisation
-     * ************************************************************************
-     */
-
-    /**
-     * Private method for locally importing suggested content meta-data for a single post
-     * Is called both when importing suggested content, and synchronising publications.
-     * 
-     * This process attaches following user-defined functions.
-     *
-     * <table>
-     * <tr><td>function-name</td><td>parameters</td><td>Comment</td></tr>
-     * 
-     * <tr><td>afterSourceLink</td><td>source</td>Function is run after successful import of a suggestion</tr>
-     * <tr><td>afterTopicLink</td><td>source</td>Function is run after successful link of to topic</tr>
-     * </table>
-     * 
-     * 
-     * These functions should be defined at the location specified through 'postProcessorClass' module configuration parameter.  
-     * 
-     * @param type $lastUpdate
-     */
-    private function _importSuggestion($data)
+    private function _processRemovedLocal($post)
     {
-
-
-        //Get local copy of suggestion (using it's id or url)
-        $local = Source::findItem($data);
-        //Create it if it does not yet exit
-        if (!isset($local)) {
-            $local = Source::create($data);
-        }
-        //Setup topic postprocessor
-        $local->topicPostProcessor = $this->_getPostProcessor('afterTopicLink');
-        //Link Suggestion to topic and force remote flag
-        $local->linkTopic($this->_topic->id, $data->id);
-
-        if (isset($this->module->params['postProcessorClass']) && method_exists($this->module->params['postProcessorClass'], 'afterCurableSynchronised')) {
-            call_user_func([$this->module->params['postProcessorClass'], 'afterCurableSynchronised'], $this->_topic, $local);
-        }
-
-        return $local;
-    }
-
-    private function _synchroniseScoop($data)
-    {
-        //create-or-retrieve local record storing suggestion meta-data
-        $source = $this->_importSuggestion($data);
+        $source = Source::resolve($post);
+        !$this->verbose ? '' : $this->stdout("\n--> Updating Local System:\t");
         if (!isset($source)) {
-            $this->stderr('Unhandled Exception: Source could not be created or retrieved');
-            return 1;
+            !$this->verbose ? '' : $this->stdout('Post not found: nothing to do', Console::FG_YELLOW, Console::BOLD);
+            return;
         }
-        //create-or-retrieve updated local record storing publication meta-data and tags
+        if (isset($source)) {
+            !$this->verbose ? '' : $this->stdout('Post found', Console::FG_YELLOW, Console::BOLD);
+            $rmSourceTopicCount = SourceTopic::deleteAll(['topic_id' => $this->_topic->id, 'source_id' => $source->id]);
 
-
-        $scoop = Scoop::sync($data, $this->_getPostProcessor('afterScoop'), $this->_getPostProcessor('afterScoopTag'));
-        if (!isset($scoop)) {
-            $this->stderr('Unhandled Exception: Scoop could not be created or retrieved');
-            return 1;
+            if ($rmSourceTopicCount > 0) {
+                !$this->verbose ? '' : $this->stdout('Removed publication from topic');
+            }
+            $rmScoopCount = 0;
+            if (empty(SourceTopic::findAll(['source_id' => $source->id]))) {
+             
+                $rmScoopCount = Scoop::deleteAll(['id' => $source->id]);
+                if ($rmScoopCount > 0) {
+                    !$this->verbose ? '' : $this->stdout("\n\t\t\t\tRemoving publication from local storage");
+                }
+            }
+            if ($rmSourceTopicCount == 0 && $rmScoopCount == 0) {
+                !$this->verbose ? '' : $this->stdout(": nothing to do", Console::FG_YELLOW, Console::BOLD);
+            }
         }
-
-        if (isset($this->module->params['postProcessorClass']) && method_exists($this->module->params['postProcessorClass'], 'afterCuratedSynchronised')) {
-            call_user_func([$this->module->params['postProcessorClass'], 'afterCuratedSynchronised'], $this->_topic, $scoop);
-        }
-        return $scoop;
     }
 
-    /*
-     * ************************************************************************
-     *             Private function for post-processor loading
-     * ************************************************************************
-     */
-
-    private function _getPostProcessor($fnName)
+    private function _processRemovedRemote($post)
     {
-        if (isset($this->module->params['postProcessorClass']) &&
-                method_exists($this->module->params['postProcessorClass'], $fnName)) {
-            return [$this->module->params['postProcessorClass'], $fnName];
+        !$this->verbose ? '' : $this->stdout("\n--> Updating Remote System:\t");
+        $rmTag = TagHelper::readRemovalTag($post);
+
+        if (!isset($rmTag)) {
+            //!$this->verbose ? '' : $this->stdout("\n\t\t\t\tFlagging curated post for deletion on remote storage ", Console::FG_RED, Console::BOLD);
+            $rmTag = TagHelper::createRemovalTag($this->_rmLifetime);
+            if ($this->_rmLifetime != 0) {
+                $this->_client->addTag($post->id, $rmTag);
+                return;
+            }
         }
-        return null;
+        $rmTagData = TagHelper::implodeRemovalTag($rmTag);
+        if ($rmTagData['lifetime'] < $this->_rmLifetime) {
+            !$this->verbose ? '' : $this->stdout("\n\t\t\t\tUpdating deletion flag on remote storage", Console::FG_RED, Console::BOLD);
+        }
+        !$this->verbose ? '' : $this->stdout("\n");
+    }
+
+    /**
+     * Private method for synchronising of topical posts that are curated (published)
+     * @param type $lastUpdate
+     */
+    private function _synchroniseCurated($lastUpdate)
+    {
+        !$this->verbose ? '' : $this->stdout('Synchronising curated posts', Console::FG_CYAN, Console::BOLD);
+        foreach ($this->_client->curatedPosts($this->_topic->id, $lastUpdate)as $post) {
+            //Skip when post is pending removal
+            if (TagHelper::isRemoved($post)) {
+                continue;
+            }
+            !$this->verbose ? '' : $this->_processPostOut($post, "Synchronising curated post");
+            Scoop::synchronisePost($post, $this->_postprocessorClass);
+        }
+        !$this->verbose ? '' : $this->stdout("\n");
+    }
+
+    /**
+     * 
+     * @param type $post
+     */
+    private function _preprocessDoublePostTags($post)
+    {
+        $duplicates[] = TagHelper::duplicates($post);
+    }
+
+    private function _synchroniseDuplicates()
+    {
+        foreach ($this->_duplicates as $key => $values) {
+            //Tag Double Posts
+            //Maintain Tag State
+        }
+    }
+
+    private function _processPostOut($post, $msg, $color = Console::FG_GREEN)
+    {
+        $this->stdout("\n$msg: \t");
+        $this->stdout($post->url, $color, Console::BOLD);
     }
 
 }

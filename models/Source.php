@@ -122,7 +122,7 @@ class Source extends \yii\db\ActiveRecord
      */
     public function setPostAttributes($post)
     {
-        echo $post->url;
+
         $attributes = [
             'id' => $post->id,
             'url' => $post->url,
@@ -145,31 +145,13 @@ class Source extends \yii\db\ActiveRecord
         $this->setAttributes($attributes);
     }
 
-    public function linkTopic($mixed, $isRemote = false)
+    public function linkTopic($mixed)
     {
         $topic = Topic::resolve($mixed);
         if (!isset($topic)) {
             return false;
         }
-        return SourceTopic::sync($topic->id, $this->id, $isRemote, $this->topicPostProcessor);
-
-
-        /*
-
-          $out = [true, $topic];
-          try {
-          $model = new SourceTopic(['topic_id' => $topicId, 'source_id' => $this->id]);
-          if (isset($this->topicPostProcessor)) {
-          $model->postProcessor = $this->topicPostProcessor;
-          }
-          $out[0] = $model->save();
-          } catch (\Exception $ex) {
-          //  echo $ex->getMessage();
-          $out[0] = false;
-          }
-          return $out;
-         * 
-         */
+        return SourceTopic::sync($topic->id, $this->id, $this->topicPostProcessor);
     }
 
     /**
@@ -188,12 +170,12 @@ class Source extends \yii\db\ActiveRecord
      * 
      * @param type $item
      */
-    public static function findItem($item)
+    public static function resolve($post)
     {
         return self::find()->filterWhere([
                     'OR',
-                    ['id' => $item->id],
-                    ['url' => $item->url]
+                    ['id' => $post->id],
+                    ['url' => $post->url]
                 ])->one();
     }
 
@@ -210,13 +192,35 @@ class Source extends \yii\db\ActiveRecord
 
         try {
             if ($model->save()) {
-
                 return $model;
             }
         } catch (\Exception $ex) {
             var_dump($model->errors);
         }
         return null;
+    }
+
+    public static function importPost($post, $postprocessorClass)
+    {
+        //Get local copy of suggestion (using it's id or url)
+        $local = self::resolve($post);
+        //Create it if it does not yet exit
+        if (!isset($local)) {
+            $local = self::create($post);
+        }
+        //Setup postprocessor after linking the local source to topic 
+
+        if (isset($postprocessorClass) && method_exists($postprocessorClass, 'afterCurableSynchronised')) {
+            $local->topicPostProcessor = [$postprocessorClass, 'afterCurableSynchronised'];
+        }
+
+        //Link Suggestion to topic and force remote flag
+        $local->linkTopic($post->topicId);
+        
+        if (isset($postprocessorClass) && method_exists($postprocessorClass, 'afterCurableSynchronised')) {
+            call_user_func([$postprocessorClass, 'afterCurableSynchronised'], Topic::findOne($post->topicId), $local);
+        }
+        return $local;
     }
 
 }

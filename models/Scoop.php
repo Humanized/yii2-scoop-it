@@ -141,6 +141,29 @@ class Scoop extends \yii\db\ActiveRecord
         return $model->save();
     }
 
+    public static function synchronisePost($post, $postprocessorClass)
+    {
+        //create-or-retrieve local record storing suggestion meta-data
+        $source = Source::importPost($post, $postprocessorClass);
+
+        if (!isset($source)) {
+//            $this->stderr('Unhandled Exception: Source could not be created or retrieved');
+            return null;
+        }
+        //create-or-retrieve updated local record storing publication meta-data and tags
+        $scoop = self::sync($post, $postprocessorClass);
+        // $scoop = self::sync($post, self::getPostprocessor($postprocessorClass, 'afterScoop'), self::getPostprocessor($postprocessorClass, 'afterScoopTag'));
+        if (!isset($scoop)) {
+            //          $this->stderr('Unhandled Exception: Scoop could not be created or retrieved');
+            return null;
+        }
+
+        if (isset($postprocessorClass) && method_exists($postprocessorClass, 'afterCuratedSynchronised')) {
+            call_user_func([$postprocessorClass, 'afterCuratedSynchronised'], Topic::findOne($post->topicId), $scoop);
+        }
+        return $scoop;
+    }
+
     /**
      * 
      * @param type $data
@@ -148,29 +171,28 @@ class Scoop extends \yii\db\ActiveRecord
      * @param type $afterTagFn
      * @return type
      */
-    public static function sync($data, $afterScoopFn = null, $afterTagFn = null)
+    public static function sync($data, $postprocessorClass)
     {
         //Synchronise local scoop record
-        $local = self::_syncScoop($data, $afterScoopFn);
+        $local = self::_syncScoop($data, $postprocessorClass);
         //Prepare for tag postprocessing
-        if (isset($afterTagFn) && is_callable($afterTagFn)) {
-            $local->tagPostProcessor = $afterTagFn;
+        if (isset($postprocessorClass) && method_exists($postprocessorClass, 'afterScoopTag')) {
+            $local->tagPostProcessor = [$postprocessorClass, 'afterScoopTag'];
         }
         //Synchronise tags
         $local->syncTags($data->tags);
         return $local;
     }
 
-    private static function _syncScoop($data, $fn)
+    private static function _syncScoop($data, $postprocessorClass)
     {
         $local = self::findOne($data->id);
         if (!isset($local)) {
             $local = new Scoop();
             $local->setPostAttributes($data);
         }
-        //Attach post-processor $fn variable is provided for afterScoop function
-        if (isset($fn) && is_callable($fn)) {
-            $local->postProcessor = $fn;
+        if (isset($postprocessorClass) && method_exists($postprocessorClass, 'afterScoop')) {
+            $local->postProcessor = [$postprocessorClass, 'afterScoop'];
         }
         $local->save();
         //   echo 'saved scoop' . $local->id;
@@ -203,7 +225,6 @@ class Scoop extends \yii\db\ActiveRecord
 
     public function remote()
     {
-
         $client = new \humanized\scoopit\Client();
         return $client->getPost($this->id);
     }

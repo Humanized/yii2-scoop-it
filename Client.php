@@ -5,6 +5,7 @@ namespace humanized\scoopit;
 use Yii;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Subscriber\Oauth\Oauth1;
+use humanized\scoopit\components\TagHelper;
 
 /**
  * PHP Scoop.it HTTP Client
@@ -53,14 +54,18 @@ class Client extends \GuzzleHttp\Client
      */
     private $_pager = 1;
 
+    /*
+     * =========================================================================
+     *                          Client Initialisation
+     * =========================================================================
+     */
+
     /**
-     * The c
-     * 
+     * Overwritten Constructor  
      * @param array $config
      */
     public function __construct(array $config = array())
     {
-
         $this->_initConfig();
         $this->_stack = HandlerStack::create();
         $this->_middlewareConfig = [
@@ -96,18 +101,11 @@ class Client extends \GuzzleHttp\Client
         $this->_pager = 1;
     }
 
-    public function incrementPager()
-    {
-
-        $this->_pager +=1;
-        //     echo 'pager-set:' . $this->_pager . "\n";
-    }
-
-    public function resetPager()
-    {
-        $this->_pager = 1;
-        //   echo 'pager-set:' . $this->_pager . "\n";
-    }
+    /*
+     * =========================================================================
+     *                      Topic Operations
+     * =========================================================================
+     */
 
     public function getTopics($filerOutput = FALSE)
     {
@@ -119,6 +117,119 @@ class Client extends \GuzzleHttp\Client
             $out = array_values(array_filter(array_map($getDataFn, $out)));
         }
         return $out;
+    }
+
+    public function taggedPosts($topicId, $tag)
+    {
+        $queryParams = [
+            'id' => $topicId,
+            'order' => 'tag',
+            'tag' => $tag,
+        ];
+        return \GuzzleHttp\json_decode($this->get('api/1/topic', [
+                            'query' => $queryParams
+                        ])->getBody()->getContents())->topic->curatedPosts;
+    }
+
+    public function curablePosts($topicId, $lastUpdate = 0)
+    {
+        return $this->_getContent('curablePosts', $topicId, $lastUpdate);
+    }
+
+    public function curatedPosts($topicId, $lastUpdate = 0)
+    {
+        return $this->_getContent('curatedPosts', $topicId, $lastUpdate);
+    }
+
+    private function _getContent($node, $topicId, $lastUpdate)
+    {
+        if ($node != 'curablePosts' && $node != 'curatedPosts') {
+            return [];
+        }
+        $since = time() - (24 * 60 * 60 * $lastUpdate);
+
+        $queryParam = str_replace("Posts", "", $node);
+        $queryParams = [
+            'id' => $topicId,
+            'since' => $since * 1000, //*1000 for 64-bit
+            $queryParam => 100,
+        ];
+        $raw = $this->get('api/1/topic', [
+            'query' => $queryParams
+        ]);
+        $result = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
+        return $result->$node;
+    }
+
+    /*
+     * =========================================================================
+     *                     Generic Post Operations
+     * =========================================================================
+     */
+
+    public function getPost($postId)
+    {
+        $data = \GuzzleHttp\json_decode($this->get('api/1/post', ['query' => ['id' => $postId]
+                ])->getBody()->getContents());
+        return $data;
+    }
+
+    public function deletePost($postId)
+    {
+        $queryParams = ['action' => 'delete', 'id' => $postId];
+        $this->post('api/1/post', ['query' => $queryParams]);
+    }
+
+    public function addTag($postId, $tag)
+    {
+        try {
+            $post = $this->getPost($postId);
+            if (!in_array($tag, $post->tags)) {
+                return $this->replaceTags($postId, array_merge($post->tags, [$tag]));
+            }
+        } catch (\Exception $exc) {
+            //Post not found
+        }
+        return false;
+    }
+
+    public function removeTag($postId, $tag)
+    {
+        try {
+            $post = $this->getPost($postId);
+            if (in_array($tag, $post->tags)) {
+
+                return true;
+            }
+        } catch (\Exception $exc) {
+            
+        }
+        return false;
+    }
+
+    public function replaceTags($postId, $tags)
+    {
+        $queryParams = preg_replace(
+                '/%5B(?:[0-9]|[1-9][0-9]+)%5D=/', '=', http_build_query(
+                        ['action' => 'edit', 'tag' => $tags, 'id' => $postId], null, '&'));
+        $this->post('api/1/post', ['query' => $queryParams]);
+
+        return true;
+    }
+
+    /*
+     * =========================================================================
+     *                     Enchanced Post Operations
+     * =========================================================================
+     */
+
+    public function cleanDuplicatePosts($postId)
+    {
+        $post = $this->getPost($postId);
+        $duplicates = TagHelper::duplicates($post);
+        foreach ($duplicates as $duplicate) {
+            
+        }
     }
 
     public function getTopicKeywords($topicId, $filerOutput = FALSE)
@@ -152,12 +263,6 @@ class Client extends \GuzzleHttp\Client
         return $importTopic;
     }
 
-    public function deleteScoop($postId)
-    {
-        $queryParams = ['action' => 'delete', 'id' => $postId];
-        $this->post('api/1/post', ['query' => $queryParams]);
-    }
-
     public function autoScoop($topicId, $lastUpdate)
     {
         $remoteSources = $this->_getContent('curablePosts', $topicId, $lastUpdate);
@@ -168,39 +273,6 @@ class Client extends \GuzzleHttp\Client
         }
     }
 
-    public function curablePosts($topicId, $lastUpdate = 0)
-    {
-        // echo 'curables';
-        return $this->_getContent('curablePosts', $topicId, $lastUpdate);
-    }
-
-    public function curatedPosts($topicId, $lastUpdate = 0)
-    {
-        // echo 'curated';
-        return $this->_getContent('curatedPosts', $topicId, $lastUpdate);
-    }
-
-    private function _getContent($node, $topicId, $lastUpdate)
-    {
-        if ($node != 'curablePosts' && $node != 'curatedPosts') {
-            return [];
-        }
-        $since = time() - (24 * 60 * 60 * $lastUpdate);
-
-        $queryParam = str_replace("Posts", "", $node);
-        $queryParams = [
-            'id' => $topicId,
-            'since' => $since * 1000, //*1000 for 64-bit
-            $queryParam => 100,
-        ];
-        $raw = $this->get('api/1/topic', [
-            'query' => $queryParams
-        ]);
-
-        $result = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topic;
-        return $result->$node;
-    }
-
     public function getRawSource($topicId, $lastUpdate = 0)
     {
         $raw = $this->get('api/1/topic', ['query' => ['since' => time() - (60 * 60 * $lastUpdate), 'id' => $topicId]
@@ -209,16 +281,21 @@ class Client extends \GuzzleHttp\Client
         return $out;
     }
 
-    public function getPost($postId)
+    /*
+     *  Todo: Operations under revision pending removal or proper integration
+     */
+
+    public function incrementPager()
     {
-        $data = \GuzzleHttp\json_decode($this->get('api/1/post', ['query' => ['id' => $postId]
-                ])->getBody()->getContents());
-        return $data;
+
+        $this->_pager +=1;
+        //     echo 'pager-set:' . $this->_pager . "\n";
     }
 
-    public function getTags($postId)
+    public function resetPager()
     {
-        
+        $this->_pager = 1;
+        //   echo 'pager-set:' . $this->_pager . "\n";
     }
 
 }

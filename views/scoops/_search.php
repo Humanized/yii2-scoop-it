@@ -4,14 +4,6 @@ use yii\helpers\Html;
 use kartik\form\ActiveForm;
 use kartik\daterange\DateRangePicker;
 use kartik\widgets\Select2;
-
-/* @var $this yii\web\View */
-/* @var $model humanized\scoopit\models\ScoopSearch */
-/* @var $form yii\widgets\ActiveForm */
-/*
- * 
- * 
- */
 ?>
 
 <div class="scoop-search">

@@ -71,16 +71,16 @@ class SourceTopic extends \yii\db\ActiveRecord
         return $this->hasOne(Topic::className(), ['id' => 'topic_id']);
     }
 
-    public static function sync($topicId, $sourceId, $isRemote = false, $afterTopicLinkFn = null)
+    public static function sync($topicId, $sourceId, $afterTopicLinkFn = null)
     {
-        $model = self::_syncModel($topicId, $sourceId, $isRemote, $afterTopicLinkFn);
+        $model = self::_syncModel($topicId, $sourceId,  $afterTopicLinkFn);
         if (isset($model)) {
             return $model;
         }
         return false;
     }
 
-    private static function _syncModel($topicId, $sourceId, $isRemote, $fn)
+    private static function _syncModel($topicId, $sourceId, $fn)
     {
         //Get/Create link between scoop and topic
         $data = ['topic_id' => $topicId, 'source_id' => $sourceId];

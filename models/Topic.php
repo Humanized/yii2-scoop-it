@@ -181,7 +181,6 @@ class Topic extends \yii\db\ActiveRecord
         if (count($local) != 0) {
             return Topic::deleteAll(['in', 'id', $local]);
         }
-
         return true;
     }
 
@@ -189,7 +188,7 @@ class Topic extends \yii\db\ActiveRecord
     {
         $model = self::findOne($data['id']);
 
-        //Register remote topic-name change
+        //Register a remote topic-name change
         if (isset($model) && $model->name != $data['name']) {
             $model->name = $data['name'];
             $model->save(false);
