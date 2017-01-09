@@ -363,8 +363,8 @@ class DataController extends Controller
     {
         //Update lifetime on remote, when local system has a higher lifetime specified
         $lifetime = $data['lifetime'];
-        
-        if ( $this->_remoteLifetime>$lifetime) {
+
+        if ($this->_remoteLifetime > $lifetime) {
             !$this->verbose ? '' : $this->stdout("\n\t\t\t\tUpdating $label timestamp tag lifetime");
             $lifetime = $this->_remoteLifetime;
             $this->_client->removeTag($post->id, TagHelper::createTimestampTag($tag, $data['lifetime'], $data['timestamp']));
@@ -381,11 +381,12 @@ class DataController extends Controller
     {
         switch ($tag) {
             case'#rm': {
-                     $this->_client->deletePost($post->id);
+                    $this->_client->deletePost($post->id);
                     break;
                 }
 
             case'#cp': {
+                    $this->_client->removeTag($post->id, $tag);
                     $this->_client->removeTag($post->id, TagHelper::createTimestampTag($tag, $data['lifetime'], $data['timestamp']));
                     break;
                 }
