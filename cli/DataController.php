@@ -79,7 +79,7 @@ class DataController extends Controller
      *
      * @var boolean 
      */
-    private $_enableSyncTag = true;
+    private $_enableCpTag = true;
 
     /**
      *
@@ -89,22 +89,9 @@ class DataController extends Controller
 
     /**
      *
-     * @var boolean 
+     * @var string[] 
      */
-    private $_enableDoublePostTags = false;
-
-    /**
-     *
-     * @var boolean 
-     */
-    private $_saveDuplicateTagState = false;
-
-    /**
-     *
-     * @var integer[][] 
-     */
-    private $_duplicates = [];
-    protected $switches = ['autoscoop', 'saveSuggestions', 'enableRmTag', 'enableDoublePostTags', 'saveDuplicateTagState'];
+    protected $switches = ['autoscoop', 'saveSuggestions', 'enableRmTag', 'enableCpTag'];
 
     public function options()
     {
@@ -162,7 +149,7 @@ class DataController extends Controller
         if ($this->_enableRmTag) {
             $this->_processTag('#rm', 'removal');
         }
-        if ($this->_enableSyncTag) {
+        if ($this->_enableCpTag) {
             $this->_processTag('#cp', 'updated');
         }
         $this->_synchroniseCurated($lastUpdate);
@@ -376,7 +363,8 @@ class DataController extends Controller
     {
         //Update lifetime on remote, when local system has a higher lifetime specified
         $lifetime = $data['lifetime'];
-        if ($lifetime > $this->_remoteLifetime) {
+        
+        if ( $this->_remoteLifetime>$lifetime) {
             !$this->verbose ? '' : $this->stdout("\n\t\t\t\tUpdating $label timestamp tag lifetime");
             $lifetime = $this->_remoteLifetime;
             $this->_client->removeTag($post->id, TagHelper::createTimestampTag($tag, $data['lifetime'], $data['timestamp']));
@@ -393,7 +381,7 @@ class DataController extends Controller
     {
         switch ($tag) {
             case'#rm': {
-                    // $this->_client->deletePost($post->id);
+                     $this->_client->deletePost($post->id);
                     break;
                 }
 

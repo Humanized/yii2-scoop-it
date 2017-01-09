@@ -198,7 +198,7 @@ class Client extends \GuzzleHttp\Client
         try {
             $post = $this->getPost($postId);
             if (in_array($tag, $post->tags)) {
-                return $this->replaceTags($postId, $this->_removeTag($tags, $tag));
+                return $this->replaceTags($postId, $this->_removeTag($post->tags, $tag));
             }
         } catch (\Exception $exc) {
             //Post not found

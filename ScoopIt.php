@@ -16,10 +16,6 @@ namespace humanized\scoopit;
  */
 class ScoopIt extends \yii\base\Module
 {
-    
-    
-    
-    
 
     /**
      *
@@ -32,6 +28,12 @@ class ScoopIt extends \yii\base\Module
      * @var boolean - when true, published posts when be removed from the local topic when tagged using #rm 
      */
     public $enableRmTag = true;
+
+    /**
+     *
+     * @var boolean - when true, published posts when be explicitly updated from the local topic when tagged using #cp 
+     */
+    public $enableCpTag = true;
 
     /**
      *
@@ -68,6 +70,8 @@ class ScoopIt extends \yii\base\Module
         $this->controllerNamespace = 'humanized\scoopit\cli';
         $this->params['saveSuggestions'] = $this->saveSuggestions;
         $this->params['enableRmTag'] = $this->enableRmTag;
+        $this->params['enableCpTag'] = $this->enableCpTag;
+
         $this->params['remoteLifetime'] = $this->remoteLifetime;
         $this->params['enableDoublePostTags'] = $this->enableDoublePostTags;
 
