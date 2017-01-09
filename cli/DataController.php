@@ -77,9 +77,15 @@ class DataController extends Controller
 
     /**
      *
+     * @var boolean 
+     */
+    private $_enableSyncTag = true;
+
+    /**
+     *
      * @var integer 
      */
-    private $_rmLifetime = 0;
+    private $_remoteLifetime = 0;
 
     /**
      *
@@ -154,7 +160,10 @@ class DataController extends Controller
         }
 
         if ($this->_enableRmTag) {
-            $this->_processRemoved();
+            $this->_processTag('#rm', 'removal');
+        }
+        if ($this->_enableSyncTag) {
+            $this->_processTag('#cp', 'updated');
         }
         $this->_synchroniseCurated($lastUpdate);
 
@@ -211,9 +220,9 @@ class DataController extends Controller
                         $this->module->params[$switch]);
             }
         }
-        if ($this->_enableRmTag) {
-            $this->_rmLifetime = isset($this->module->params['rmLifetime']) ? $this->module->params['rmLifetime'] : 0;
-        }
+
+        $this->_remoteLifetime = isset($this->module->params['remoteLifetime']) ? $this->module->params['remoteLifetime'] : 0;
+
         return true;
     }
 
@@ -234,7 +243,7 @@ class DataController extends Controller
             $isEnabled = isset($this->$switchVar) && $this->$switchVar ? true : false;
             $this->stdout(($isEnabled ? "en" : "dis") . "abled ", ($isEnabled ? Console::FG_GREEN : Console::FG_RED), Console::BOLD);
             if (($switch == 'enableRmTag') && $isEnabled) {
-                $this->stdout("(keep-alive=$this->_rmLifetime)");
+                $this->stdout("(keep-alive=$this->_remoteLifetime)");
             }
         }
         $this->stdout("\n");
@@ -270,70 +279,6 @@ class DataController extends Controller
     }
 
     /**
-     * 
-     */
-    private function _processRemoved()
-    {
-        !$this->verbose ? '' : $this->stdout('Processing removed posts', Console::FG_CYAN, Console::BOLD);
-        foreach ($this->_client->taggedPosts($this->_topic->id, '#rm') as $post) {
-            !$this->verbose ? '' : $this->_processPostOut($post, "Processing removed post");
-            $this->_processRemovedLocal($post);
-
-            $this->_processRemovedRemote($post);
-        }
-        !$this->verbose ? '' : $this->stdout("\n");
-    }
-
-    private function _processRemovedLocal($post)
-    {
-        $source = Source::resolve($post);
-        !$this->verbose ? '' : $this->stdout("\n--> Updating Local System:\t");
-        if (!isset($source)) {
-            !$this->verbose ? '' : $this->stdout('Post not found: nothing to do', Console::FG_YELLOW, Console::BOLD);
-            return;
-        }
-        if (isset($source)) {
-            !$this->verbose ? '' : $this->stdout('Post found', Console::FG_YELLOW, Console::BOLD);
-            $rmSourceTopicCount = SourceTopic::deleteAll(['topic_id' => $this->_topic->id, 'source_id' => $source->id]);
-
-            if ($rmSourceTopicCount > 0) {
-                !$this->verbose ? '' : $this->stdout('Removed publication from topic');
-            }
-            $rmScoopCount = 0;
-            if (empty(SourceTopic::findAll(['source_id' => $source->id]))) {
-             
-                $rmScoopCount = Scoop::deleteAll(['id' => $source->id]);
-                if ($rmScoopCount > 0) {
-                    !$this->verbose ? '' : $this->stdout("\n\t\t\t\tRemoving publication from local storage");
-                }
-            }
-            if ($rmSourceTopicCount == 0 && $rmScoopCount == 0) {
-                !$this->verbose ? '' : $this->stdout(": nothing to do", Console::FG_YELLOW, Console::BOLD);
-            }
-        }
-    }
-
-    private function _processRemovedRemote($post)
-    {
-        !$this->verbose ? '' : $this->stdout("\n--> Updating Remote System:\t");
-        $rmTag = TagHelper::readRemovalTag($post);
-
-        if (!isset($rmTag)) {
-            //!$this->verbose ? '' : $this->stdout("\n\t\t\t\tFlagging curated post for deletion on remote storage ", Console::FG_RED, Console::BOLD);
-            $rmTag = TagHelper::createRemovalTag($this->_rmLifetime);
-            if ($this->_rmLifetime != 0) {
-                $this->_client->addTag($post->id, $rmTag);
-                return;
-            }
-        }
-        $rmTagData = TagHelper::implodeRemovalTag($rmTag);
-        if ($rmTagData['lifetime'] < $this->_rmLifetime) {
-            !$this->verbose ? '' : $this->stdout("\n\t\t\t\tUpdating deletion flag on remote storage", Console::FG_RED, Console::BOLD);
-        }
-        !$this->verbose ? '' : $this->stdout("\n");
-    }
-
-    /**
      * Private method for synchronising of topical posts that are curated (published)
      * @param type $lastUpdate
      */
@@ -342,7 +287,7 @@ class DataController extends Controller
         !$this->verbose ? '' : $this->stdout('Synchronising curated posts', Console::FG_CYAN, Console::BOLD);
         foreach ($this->_client->curatedPosts($this->_topic->id, $lastUpdate)as $post) {
             //Skip when post is pending removal
-            if (TagHelper::isRemoved($post)) {
+            if (TagHelper::isTagSkipped($post)) {
                 continue;
             }
             !$this->verbose ? '' : $this->_processPostOut($post, "Synchronising curated post");
@@ -351,20 +296,111 @@ class DataController extends Controller
         !$this->verbose ? '' : $this->stdout("\n");
     }
 
-    /**
-     * 
-     * @param type $post
-     */
-    private function _preprocessDoublePostTags($post)
+    private function _processTag($tag, $label)
     {
-        $duplicates[] = TagHelper::duplicates($post);
+        !$this->verbose ? '' : $this->stdout('Processing ' . $label . ' posts', Console::FG_CYAN, Console::BOLD);
+        foreach ($this->_client->taggedPosts($this->_topic->id, $tag) as $post) {
+            !$this->verbose ? '' : $this->_processPostOut($post, "Processing $label post");
+            $this->_processLocalTag($post, $tag, $label);
+            $this->_processRemoteTag($post, $tag, $label);
+        }
+        !$this->verbose ? '' : $this->stdout("\n");
     }
 
-    private function _synchroniseDuplicates()
+    private function _processLocalTag($post, $tag, $label)
     {
-        foreach ($this->_duplicates as $key => $values) {
-            //Tag Double Posts
-            //Maintain Tag State
+        switch ($tag) {
+            case'#rm': {
+                    $this->_processRemovedLocal($post);
+                    break;
+                }
+
+            case'#cp': {
+                    Scoop::synchronisePost($post, $this->_postprocessorClass);
+                    break;
+                }
+        }
+    }
+
+    private function _processRemovedLocal($post)
+    {
+        $source = Source::resolve($post);
+        !$this->verbose ? '' : $this->stdout("\n--> Updating Local System:\t");
+        if (!isset($source)) {
+            !$this->verbose ? '' : $this->stdout('Post not found - nothing to do', Console::FG_YELLOW, Console::BOLD);
+            return;
+        }
+        if (isset($source)) {
+            !$this->verbose ? '' : $this->stdout('Post found', Console::FG_YELLOW, Console::BOLD);
+            $rmSourceTopicCount = SourceTopic::deleteAll(['topic_id' => $this->_topic->id, 'source_id' => $source->id]);
+            if ($rmSourceTopicCount > 0) {
+                !$this->verbose ? '' : $this->stdout('\n\t\t\t\tRemoved publication from topic');
+            }
+            $rmScoopCount = 0;
+            if (empty(SourceTopic::findAll(['source_id' => $source->id]))) {
+                $rmScoopCount = Scoop::deleteAll(['id' => $source->id]);
+                if ($rmScoopCount > 0) {
+                    !$this->verbose ? '' : $this->stdout("\n\t\t\t\tRemoving publication from local storage");
+                }
+            }
+            if ($rmSourceTopicCount == 0 && $rmScoopCount == 0) {
+                !$this->verbose ? '' : $this->stdout(" - nothing to do", Console::FG_YELLOW, Console::BOLD);
+            }
+        }
+    }
+
+    private function _processRemoteTag($post, $tag, $label)
+    {
+        !$this->verbose ? '' : $this->stdout("\n--> Updating Remote System:\t");
+        $remoteTag = TagHelper::readTag($post, $tag);
+        $init = false;
+        if (!isset($remoteTag)) {
+            $init = true;
+            !$this->verbose ? '' : $this->stdout(ucfirst($label) . ' timestamp tag not found', Console::FG_YELLOW, Console::BOLD);
+            $remoteTag = TagHelper::createTimestampTag($tag, $this->_remoteLifetime);
+            if ($this->_remoteLifetime != 0) {
+                !$this->verbose ? '' : $this->stdout('- creating', Console::FG_YELLOW, Console::BOLD);
+                $this->_client->addTag($post->id, $remoteTag);
+                return;
+            }
+        }
+        !$this->verbose ? '' : $this->stdout(($init ? '- forcing' : ucfirst($label) . ' timestamp tag found'), Console::FG_YELLOW, Console::BOLD);
+        $data = TagHelper::implodeTimestampTag($remoteTag);
+        if ($this->_processTimestampTag($post, $tag, $data, $label)) {
+            $this->_executeTimestampTag($post, $tag, $data);
+        }
+        !$this->verbose ? '' : $this->stdout("\n");
+    }
+
+    private function _processTimestampTag($post, $tag, $data, $label)
+    {
+        //Update lifetime on remote, when local system has a higher lifetime specified
+        $lifetime = $data['lifetime'];
+        if ($lifetime > $this->_remoteLifetime) {
+            !$this->verbose ? '' : $this->stdout("\n\t\t\t\tUpdating $label timestamp tag lifetime");
+            $lifetime = $this->_remoteLifetime;
+            $this->_client->removeTag($post->id, TagHelper::createTimestampTag($tag, $data['lifetime'], $data['timestamp']));
+            $this->_client->addTag($post->id, TagHelper::createTimestampTag($tag, $lifetime, $data['timestamp']));
+        }
+        if (time() > ( $data['timestamp'] + ($lifetime * 60 * 60))) {
+            !$this->verbose ? '' : $this->stdout("\n\t\t\t\tProcessing $label timestamp tag");
+            return true;
+        }
+        return false;
+    }
+
+    private function _executeTimestampTag($post, $tag, $data)
+    {
+        switch ($tag) {
+            case'#rm': {
+                    // $this->_client->deletePost($post->id);
+                    break;
+                }
+
+            case'#cp': {
+                    $this->_client->removeTag($post->id, TagHelper::createTimestampTag($tag, $data['lifetime'], $data['timestamp']));
+                    break;
+                }
         }
     }
 

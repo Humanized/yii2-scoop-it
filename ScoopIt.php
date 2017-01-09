@@ -37,7 +37,7 @@ class ScoopIt extends \yii\base\Module
      *
      * @var integer - amount of hours that a post tagged using #rm should remain available remotely. When set to 0, the post is removed remotely immediately after local removal. This setting is useful, to allow multiple local systems to synchronise to the remote system state before actual remote deletion occurs  
      */
-    public $rmLifetime = 0;
+    public $remoteLifetime = 0;
 
     /**
      *
@@ -68,7 +68,7 @@ class ScoopIt extends \yii\base\Module
         $this->controllerNamespace = 'humanized\scoopit\cli';
         $this->params['saveSuggestions'] = $this->saveSuggestions;
         $this->params['enableRmTag'] = $this->enableRmTag;
-        $this->params['rmLifetime'] = $this->rmLifetime;
+        $this->params['remoteLifetime'] = $this->remoteLifetime;
         $this->params['enableDoublePostTags'] = $this->enableDoublePostTags;
 
         if (isset($this->preProcessorClass)) {

@@ -5,32 +5,32 @@ namespace humanized\scoopit\components;
 class TagHelper
 {
 
-    public static function isRemoved($post)
+    public static function isTagSkipped($post)
     {
-        return in_array('#rm', $post->tags);
+        return in_array('#rm', $post->tags) || in_array('#cp', $post->tags);
     }
 
-    public static function readRemovalTag($post)
+    public static function readTag($post, $prefix)
     {
         foreach ($post->tags as $tag) {
             //   echo $tag;
-            if (strpos($tag, '#rm_at:') === 0) {
+            if (strpos($tag, $prefix . '_at:') === 0) {
                 return substr($tag, 7);
             }
         }
         return null;
     }
 
-    public static function implodeRemovalTag($tag)
+    public static function implodeTimestampTag($tag)
     {
         $separator = strpos($tag, '|');
-        return ['timestamp' => substr($tag, 1, $separator), 'lifetime' => substr($tag, $separator + 1)];
+        return ['timestamp' => substr($tag, 0, $separator), 'lifetime' => substr($tag, $separator + 1)];
     }
 
-    public static function createRemovalTag($lifetime, $time = null)
+    public static function createTimestampTag($prefix, $lifetime, $time = null)
     {
         $timestamp = (isset($time) ? $time : time());
-        return "#rm_at:$timestamp|$lifetime";
+        return $prefix . "_at:$timestamp|$lifetime";
     }
 
     public static function shortcuts($post)

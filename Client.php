@@ -198,13 +198,23 @@ class Client extends \GuzzleHttp\Client
         try {
             $post = $this->getPost($postId);
             if (in_array($tag, $post->tags)) {
-
-                return true;
+                return $this->replaceTags($postId, $this->_removeTag($tags, $tag));
             }
         } catch (\Exception $exc) {
-            
+            //Post not found
         }
         return false;
+    }
+
+    private function _removeTag($tags, $exception)
+    {
+        $out = [];
+        foreach ($tags as $tag) {
+            if ($tag != $exception) {
+                $out[] = $tag;
+            }
+        }
+        return $out;
     }
 
     public function replaceTags($postId, $tags)
