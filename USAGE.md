@@ -1,10 +1,8 @@
-# Yii2 Scoop.it - USAGE
+# Yii2 Scoop.it - CLI USAGE
 ## Assertion
 
 
-## Command Line Interface
-
-### Running acquisition process
+## Running acquisition process
 
 Once configured to specification, the local instance can synchronise data obtained from the remote Scoop.it account.
 
@@ -35,8 +33,8 @@ Running synchronisation commands in anonymous mode provides read-access related 
 Running synchronisation commands in authenticated mode provides read-and-write access to topical content gathered by the webcrawler, which includes content which has not been previously scooped.  
 
 
+## Customising acquisition process 
 
-### Customising acquisition process 
 
 
 
