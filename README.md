@@ -85,6 +85,8 @@ For this, an appropriate value is set for the authorisationCallbackUri, which mu
 Once configured, the process for obtaining token and token secret values can be described as followed
 
 *Leg #1*
+
+
 From commandline, run following command from the application root.
 
 ```bash
@@ -93,9 +95,13 @@ $ php yii news/oauth
 The system subsequently displays an external URL to the remote Scoop.it account, and prompts the user for a verifier.. 
 
 *Leg #2*
+
+
 To obtain the authorisation verfier, follow the external link in a graphical browser, authorising application access by  the local application instance to the remote Scoop.it account. Upon authorisation, a redirection occurs to the local instance, using the authorisationCallbackUrl setup earlier, displaying a (useless) token and the verifier requested by the prompt.    
 
 *Leg #3*
+
+
 Providing the verfier obtained in the previous leg in the prompt obtained in the first leg subsequently displays the token and token secret values, for local configuration setup
 
 
