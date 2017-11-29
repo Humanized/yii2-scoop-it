@@ -39,6 +39,16 @@ Runlevel: Authenticated
 
 Default: 0
 
+### -autoscoopSuffix (string)
+
+To enable automated content publication for a topic, a user-specified suffix must be provided identifying topic pages subject to the mechanism. For this, it is required that the topic is maintained on the remote system in two versions denoted by the naming convention as exemplified next.
+
+Suppose content involving a topic called health is subject to manual curation. Then, a second topic called health-auto is used to maintains a list of trusted sources which are subject to be automatically publication on the health topic page, and this without any manual user invention. In this case, as by default, the autoScoopSuffix is set thus to '-auto'. 
+
+Runlevel: Authenticated
+
+Default: '-auto'
+
 ### -enableAutoTag (boolean)
 
 When true, automatically published posts are tagged remotely with #auto tag. 
@@ -46,3 +56,18 @@ When true, automatically published posts are tagged remotely with #auto tag.
 Runlevel: Authenticated
 
 Default: false
+
+### -autotopicSuffix ()
+
+When set treats remote topics with a given suffix as 
+
+Runlevel: Authenticated
+
+Default: unset
+
+
+#### -autoScoopTopicCondition (callable)
+
+Runlevel: Authenticated
+
+Default: unset
