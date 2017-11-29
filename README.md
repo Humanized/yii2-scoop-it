@@ -51,7 +51,7 @@ Further information about module configuration can be found on the CONFIG page o
 $ php yii migrate/up --migrationPath=@vendor/humanized/yii2-scoop-it/migrations
 ```
 
-## Setup Scoop.it Account Credentials
+## Setup Scoop.it Credentials
 
 Account credentials are stored as local parameters, e.g. storing them in common/config/params-local:
 Note, these credentials are personal and should never be stored on a public software repository!
@@ -105,7 +105,10 @@ To obtain the authorisation verfier, follow the external link in a graphical bro
 Providing the verfier obtained in the previous leg in the prompt obtained in the first leg subsequently displays the token and token secret values, for local configuration setup
 
 
+For verification purposes, run following command after setup is complete.
 
-
+```bash
+$ php yii news/test
+```
 
 
