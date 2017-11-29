@@ -38,7 +38,7 @@ Add following lines to the configuration file for minimum integration:
 
 ```php
 'modules' => [
-    'news' => [
+    'scoopit' => [
         'class' => 'humanized\scoopit\ScoopIt',
     ],
 ],
@@ -90,7 +90,7 @@ Once configured, the process for obtaining token and token secret values can be 
 From commandline, run following command from the application root.
 
 ```bash
-$ php yii news/oauth
+$ php yii scoopit/oauth
 ```
 The system subsequently displays an external URL to the remote Scoop.it account, and prompts the user for a verifier.. 
 
@@ -108,7 +108,7 @@ Providing the verfier obtained in the previous leg in the prompt obtained in the
 For verification purposes, run following command after setup is complete.
 
 ```bash
-$ php yii news/test
+$ php yii scoopit/test
 ```
 
 
