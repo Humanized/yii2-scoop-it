@@ -97,7 +97,7 @@ The system subsequently displays an external URL to the remote Scoop.it account,
 *Leg #2*
 
 
-To obtain the authorisation verfier, follow the external link in a graphical browser, authorising application access by  the local application instance to the remote Scoop.it account. Upon authorisation, a redirection occurs to the local instance, using the authorisationCallbackUrl setup earlier, displaying a (useless) token and the verifier requested by the prompt.    
+To obtain the authorisation verfier, follow the external link in a graphical browser, authorising application access by  the local application instance to the remote Scoop.it account. Upon authorisation, a redirection occurs to the local instance, using the authorisationCallbackUrl setup earlier, displaying a (temporary) token and the verifier requested by the prompt.    
 
 *Leg #3*
 
