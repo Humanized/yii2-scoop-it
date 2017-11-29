@@ -50,23 +50,30 @@ Add following lines to the configuration file:
 $ php yii migrate/up --migrationPath=@vendor/humanized/yii2-scoop-it/migrations
 ```
 
-## Module Configuration Options
+## Setup Scoop.it Account Credentials
 
-Ensure the following lines are accessible as local parameters:
+Account credentials are stored as local parameters, e.g. storing them in common/config/params-local:
+Note, these credentials are personal and should never be stored on a public software repository!
 
 ```php
 'params' => [
     'scoopit' =>
     [
-        // Add the base URI used to connect to here
+        // Scoop.it API account base url here (suffixed with /api/1)
         'remoteUri' => 'https://acme-corp.scoop.it/api/1/',
-        'authorisationCallbackUri' => "path-to-website",
-        // Scoop.it Consumer Key/Secret (mandatory for both anonymous & authenticated mode)
+        // Scoop.it Consumer Key/Secret (allows anonymous mode and mandatory for authenticated mode)
         'consumerKey' => '',
         'consumerSecret' => '',
-        // Scoop.it Consumer Key/Secret (mandatory for both anonymous & authenticated mode)
+        // URL root of local website instance, used for three-tier authententication callback
+         'authorisationCallbackUri' => "path-to-website",
+        // Scoop.it Consumer Key/Secret (mandatory for authenticated mode)
         'token' => '',
         'tokenSecret' => '',
     ],
 ],
 ```
+
+The OAuth consumer key-secret combination can be obtained, after account login, on the [Scoop.it Account Application Management Page](https://www.scoop.it/dev/apps)
+
+
+
