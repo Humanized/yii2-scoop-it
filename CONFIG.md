@@ -1,60 +1,42 @@
-# Yii2 Maintenance - CONFIG
+# Yii2 Scoop.it - CONFIG
 
-## Redirection Behavior
+## Minimal Module Configuration
 
-### Minimal Configuration
-
-As defined in the [README](README.md)-file, minimal behavior configuration is setup in the root of the configuration file that effects the web application to be placed under maintenance. 
+As defined in the [README](README.md)-file, minimal module configuration is setup in the desired config file.
 
 ```php
-return [
-    'id' => 'application-name',
-    ...
-    'as beforeAction'=>[ 
-      'class'=>'humanized\maintenance\components\RedirectionBehavior',
-      //Add custom configuration options here
-      ...
-    ]
-    ...
+'modules' => [
+    'scoopit' => [
+        'class' => 'humanized\scoopit\ScoopIt',
+    ],
 ],
 ```
 
+## Additional Import Configuration Options
 
-### -force (boolean)
+### -saveSuggestions (boolean)
 
-Bypasses standard maintenance-mode status check, forcing it to always evaluate to true.
+When true, a local copy is stored of all curable (unpublished) posts.
 
-Default: true
-
-
-### -bypassPermission (string)
-
-Permission to be evaluated using Yii::$app->user->can() - Bypasses redirection when evaluating to true
-
-Default: null
-
-### -bypassRedirection (boolean|callable)
-
-Bypasses redirection when evaluating to true
-
-When using a callback, use a function without parameters which returns a boolean value
-
+Runlevel: Authenticated
 Default: false
 
-### -whitelistLoginUrl (boolean)
 
-Bypass redirection for route setup by loginUrl through the Yii::$app->user component
+### -enableRmTag (boolean)
 
-Default: true
+When true, published posts when be removed from the local topic when tagged using #rm 
 
-### -whitelistErrorAction (boolean)
+Runlevel: Authenticated
+Default: false
 
-Bypass redirection for route setup by errorAction through the Yii::$app->errorHandler component
+### -remoteLifetime (integer)
 
-Default: true
+Amount of hours that a post tagged with #rm tag should remain available before remote deletion. This setting is useful for allowing multiple local deployments to synchronise to a single remote system. When set to 0, the post is removed remotely immediately after being processed by the corresponding local deployment. 
 
-### -whitelist (array[string])
+Runlevel: Authenticated
+Default: 0
 
-Array containing individual routes (e.g. /path/to/route) which bypass the redirection
+### -enableAutoTag (boolean)
 
-Default: []
+When true, automatically published posts are tagged remotely with #auto tag. 
+Default: false
