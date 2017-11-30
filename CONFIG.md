@@ -2,19 +2,19 @@
 
 ## Minimal Module Configuration
 
-As defined in the [README](README.md)-file, minimal module configuration is setup in the desired config file.
+As defined in the [README](README.md)-file, module configuration is setup in the desired config file.
 
 ```php
 'modules' => [
     'scoopit' => [
         'class' => 'humanized\scoopit\ScoopIt',
-        'importSettings'=>[],
-        'displaySettings'=>[],
+        'saveSuggestions'=>true,
     ],
 ],
 ```
 
-## Additional Import Configuration Options
+
+## Additional Import Settings
 
 ### saveSuggestions (boolean)
 
@@ -58,4 +58,11 @@ When true, and autoscoopSuffix is set, automatically published posts are tagged 
 Runlevel: Authenticated
 
 Default: false
+
+
+### processorClass (string)
+
+
+
+## Display Settings
 
