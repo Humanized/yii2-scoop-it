@@ -43,7 +43,7 @@ Add following lines to the configuration file for minimum integration:
     ],
 ],
 ```
-Further information about module configuration can be found on the CONFIG page of this repository.
+Further information about module configuration can be found on the [CONFIG](CONFIG.md)-file of this repository.
 
 ### Run Migrations 
 
