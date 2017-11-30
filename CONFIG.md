@@ -8,13 +8,15 @@ As defined in the [README](README.md)-file, minimal module configuration is setu
 'modules' => [
     'scoopit' => [
         'class' => 'humanized\scoopit\ScoopIt',
+        'importSettings'=>[],
+        'displaySettings'=>[],
     ],
 ],
 ```
 
 ## Additional Import Configuration Options
 
-### -saveSuggestions (boolean)
+### saveSuggestions (boolean)
 
 When true, a local copy is stored of all curable (unpublished) posts.
 
@@ -23,7 +25,7 @@ Runlevel: Authenticated
 Default: false
 
 
-### -enableRmTag (boolean)
+### enableRmTag (boolean)
 
 When true, published posts when be removed from the local topic when tagged using #rm 
 
@@ -31,7 +33,7 @@ Runlevel: Anonymous
 
 Default: false
 
-### -remoteLifetime (integer)
+### remoteLifetime (integer)
 
 Amount of hours that a post tagged with #rm tag should remain available before remote deletion. This setting is useful for allowing multiple local deployments to synchronise to a single remote system. When set to 0, the post is removed remotely immediately after being processed by the corresponding local deployment. 
 
@@ -39,7 +41,7 @@ Runlevel: Authenticated
 
 Default: 0
 
-### -autoscoopSuffix (string)
+### autoscoopSuffix (string)
 
 To enable automated content publication for a topic, a user-specified suffix must be provided identifying topic pages subject to the mechanism. For this, it is required that the topic is maintained on the remote system in two versions denoted by the naming convention as exemplified next.
 
@@ -49,25 +51,11 @@ Runlevel: Authenticated
 
 Default: '-auto'
 
-### -enableAutoTag (boolean)
+### enableAutoTag (boolean)
 
-When true, automatically published posts are tagged remotely with #auto tag. 
+When true, and autoscoopSuffix is set, automatically published posts are tagged remotely with #auto tag. 
 
 Runlevel: Authenticated
 
 Default: false
 
-### -autotopicSuffix ()
-
-When set treats remote topics with a given suffix as 
-
-Runlevel: Authenticated
-
-Default: unset
-
-
-#### -autoScoopTopicCondition (callable)
-
-Runlevel: Authenticated
-
-Default: unset
