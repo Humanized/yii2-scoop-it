@@ -44,10 +44,11 @@ class Source extends \yii\db\ActiveRecord
     public function rules()
     {
         return [
-            [['id', 'url', 'date_retrieved'], 'required'],
+            [['url', 'date_retrieved'], 'required'],
             [['date_retrieved', 'image_height', 'image_width'], 'integer'],
             [['description_raw', 'description_html'], 'string'],
-            [['url', 'image_source', 'image_small', 'image_medium', 'image_large'], 'string', 'max' => 2083],
+            [['image_source', 'image_small', 'image_medium', 'image_large'], 'string', 'max' => 2083],
+            [['url'], 'string', 'max' => 1000],
             [['title'], 'string', 'max' => 400],
             [['language_id'], 'string', 'max' => 2],
         ];
@@ -172,11 +173,7 @@ class Source extends \yii\db\ActiveRecord
      */
     public static function resolve($post)
     {
-        return self::find()->filterWhere([
-                    'OR',
-                    ['id' => $post->id],
-                    ['url' => $post->url]
-                ])->one();
+        return self::find()->filterWhere(['url' => $post->url])->one();
     }
 
     /**
@@ -216,7 +213,7 @@ class Source extends \yii\db\ActiveRecord
 
         //Link Suggestion to topic and force remote flag
         $local->linkTopic($post->topicId);
-        
+
         if (isset($postprocessorClass) && method_exists($postprocessorClass, 'afterCurableSynchronised')) {
             call_user_func([$postprocessorClass, 'afterCurableSynchronised'], Topic::findOne($post->topicId), $local);
         }
