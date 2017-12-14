@@ -162,6 +162,7 @@ class Source extends \yii\db\ActiveRecord
      */
     public function hasTopic($mixed)
     {
+        var_dump($mixed);
         $topic = Topic::resolve($mixed);
         $model = SourceTopic::find()->where(['topic_id' => $topic->id, 'source_id' => $this->id])->one();
         return isset($model);

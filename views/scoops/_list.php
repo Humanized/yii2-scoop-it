@@ -9,9 +9,11 @@ use yii\widgets\Pjax;
 ?>
 
 
-<?php Pjax::begin(['id' => 'news-list']); ?>    <?=
+<?php Pjax::begin(['id' => 'news-list']); ?>   
 
-ListView::widget([
+<?php
+
+$config = [
     'dataProvider' => $dataProvider,
     'itemOptions' => ['class' => 'item'],
     'itemView' => '_item',
@@ -21,6 +23,15 @@ ListView::widget([
         'class' => \kop\y2sp\ScrollPager::className(),
         'triggerOffset' => 100,
     ]
-])
+];
+
+if (isset($pager) && $pager == 'default') {
+    unset($config['pager']);
+}
+?>
+
+<?=
+
+ListView::widget($config);
 ?>
 <?php Pjax::end(); ?>

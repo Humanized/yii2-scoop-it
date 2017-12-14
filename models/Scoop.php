@@ -100,7 +100,6 @@ class Scoop extends \yii\db\ActiveRecord
     public function setPostAttributes($post)
     {
         $attributes = [
-            'id' => $post->id,
             'date_published' => substr($post->curationDate, 0, 10),
         ];
         $this->setAttributes($attributes);
@@ -147,11 +146,11 @@ class Scoop extends \yii\db\ActiveRecord
         $source = Source::importPost($post, $postprocessorClass);
 
         if (!isset($source)) {
-//            $this->stderr('Unhandled Exception: Source could not be created or retrieved');
+            //$this->stderr('Unhandled Exception: Source could not be created or retrieved');
             return null;
         }
         //create-or-retrieve updated local record storing publication meta-data and tags
-        $scoop = self::sync($post, $postprocessorClass);
+        $scoop = self::sync($post, $source, $postprocessorClass);
         // $scoop = self::sync($post, self::getPostprocessor($postprocessorClass, 'afterScoop'), self::getPostprocessor($postprocessorClass, 'afterScoopTag'));
         if (!isset($scoop)) {
             //          $this->stderr('Unhandled Exception: Scoop could not be created or retrieved');
@@ -171,10 +170,10 @@ class Scoop extends \yii\db\ActiveRecord
      * @param type $afterTagFn
      * @return type
      */
-    public static function sync($data, $postprocessorClass)
+    public static function sync($data, $source, $postprocessorClass)
     {
         //Synchronise local scoop record
-        $local = self::_syncScoop($data, $postprocessorClass);
+        $local = self::_syncScoop($data, $source, $postprocessorClass);
         //Prepare for tag postprocessing
         if (isset($postprocessorClass) && method_exists($postprocessorClass, 'afterScoopTag')) {
             $local->tagPostProcessor = [$postprocessorClass, 'afterScoopTag'];
@@ -184,13 +183,13 @@ class Scoop extends \yii\db\ActiveRecord
         return $local;
     }
 
-    private static function _syncScoop($data, $postprocessorClass)
+    private static function _syncScoop($data, $source, $postprocessorClass)
     {
-        $local = self::findOne($data->id);
+        $local = Scoop::findOne($source->id);
         if (!isset($local)) {
-            $local = new Scoop();
-            $local->setPostAttributes($data);
+            $local = new Scoop(['id' => $source->id]);
         }
+        $local->setPostAttributes($data);
         if (isset($postprocessorClass) && method_exists($postprocessorClass, 'afterScoop')) {
             $local->postProcessor = [$postprocessorClass, 'afterScoop'];
         }

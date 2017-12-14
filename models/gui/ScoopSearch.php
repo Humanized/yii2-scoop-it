@@ -14,7 +14,7 @@ use yii\db\Query;
 class ScoopSearch extends Scoop
 {
 
-    public $pageSize = 3;
+    public $pageSize = 1;
     public $topicId = NULL;
     public $extraSafeAttributes = [];
     public $afterInitCallback;
