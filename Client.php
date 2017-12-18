@@ -233,6 +233,26 @@ class Client extends \GuzzleHttp\Client
      * =========================================================================
      */
 
+    public function autoScoop($topicId, $lastUpdate, array $targets = array())
+    {
+
+        $acceptParams = ['action' => 'accept', 'topicId' => $topicId, 'directLink' => 0];
+        $rescoopParams = ['action' => 'rescoop', 'directLink' => 0];
+        $pinParams = ['action' => 'pin'];
+        foreach ($this->_getContent('curablePosts', $topicId, $lastUpdate) as $curablePost) {
+            echo "\n" . 'auto-scoopin';
+            $acceptParams['id'] = $curablePost->id;
+            $acceptResponse = $this->post('api/1/post', ['query' => $acceptParams]);
+            $rescoopParams['id'] = \GuzzleHttp\json_decode($acceptResponse->getBody()->getContents())->post->id;
+            foreach ($targets as $target) {
+                $rescoopParams['destTopicId'] = $target;
+                $rescoopResponse = $this->post('api/1/post', ['query' => $rescoopParams]);
+                $pinParams['id'] = \GuzzleHttp\json_decode($rescoopResponse->getBody()->getContents())->post->id;
+                $this->post('api/1/post', ['query' => $pinParams]);
+            }
+        }
+    }
+
     public function cleanDuplicatePosts($postId)
     {
         $post = $this->getPost($postId);
@@ -271,16 +291,6 @@ class Client extends \GuzzleHttp\Client
             }
         };
         return $importTopic;
-    }
-
-    public function autoScoop($topicId, $lastUpdate)
-    {
-        $remoteSources = $this->_getContent('curablePosts', $topicId, $lastUpdate);
-        $queryParams = ['action' => 'accept', 'topicId' => $topicId, 'directLink' => 0];
-        foreach ($remoteSources as $remoteSource) {
-            $queryParams['id'] = $remoteSource->id;
-            $this->post('api/1/post', ['query' => $queryParams]);
-        }
     }
 
     public function getRawSource($topicId, $lastUpdate = 0)
