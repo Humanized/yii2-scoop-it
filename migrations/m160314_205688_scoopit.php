@@ -21,18 +21,12 @@ class m160314_205688_scoopit extends Migration
             'name' => $this->string(255)->unique(),
                 ], $this->tableOptions);
 
-        $this->createTable('scoopit_topic', [
-            'id' => 'BIGINT NOT NULL',
-            'is_published' => $this->boolean()->defaultValue(FALSE),
-            'name' => $this->string(255)->unique()->notNull(),
-                ], $this->tableOptions);
-        $this->addPrimaryKey('pk_topic', 'scoopit_topic', 'id');
-
         $this->createTable('scoopit_topic_map', [
-            'id' => $this->primaryKey(),
-            'name' => $this->string(255)->unique(),
-            'topic_id' => 'BIGINT NOT NULL'
+            'topic_id' => 'BIGINT NOT NULL UNIQUE',
+            'label' => $this->string(255)->unique(),
+            'position' => $this->integer()->notNull(),
                 ], $this->tableOptions);
+
         $this->addForeignKey('fk_topic_map', 'scoopit_topic_map', 'topic_id', 'scoopit_topic', 'id');
 
         //Main repository for all obtained scoopit results (as-per requirement)

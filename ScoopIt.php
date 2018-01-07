@@ -19,6 +19,18 @@ class ScoopIt extends \yii\base\Module
 
     /**
      *
+     * @var string 
+     */
+    public $topicFilterPrefix = 'nano-';
+
+    /**
+     *
+     * @var string
+     */
+    public $autoscoopSuffix = '-auto';
+
+    /**
+     *
      * @var boolean - when true, a local copy is stored of curable (unpublished) posts 
      */
     public $saveSuggestions = false;
@@ -43,19 +55,12 @@ class ScoopIt extends \yii\base\Module
 
     /**
      *
-     * @var boolean - when true, automatically published posts will be tagged remotely using #auto 
-     */
-    public $enableAutoTag = false;
-
-    /**
-     *
      * @var boolean - when true, remote double-posts identified by a local system will have remote posts tagged with list of tags #{topic-id|post-id} each tupple identifying a distinct duplicate  
      */
     public $enableDoublePostTags = true;
     public $preProcessorClass;
     public $postprocessorClass;
     public $mapTopic;
-    public $autoScoopConfig = ['topicSuffix' => '-pool'];
 
     public function init()
     {
@@ -68,6 +73,8 @@ class ScoopIt extends \yii\base\Module
     private function _initConsole()
     {
         $this->controllerNamespace = 'humanized\scoopit\cli';
+        $this->params['topicFilterPrefix'] = $this->topicFilterPrefix;
+        $this->params['autoscoopSuffix'] = $this->autoscoopSuffix;
         $this->params['saveSuggestions'] = $this->saveSuggestions;
         $this->params['enableRmTag'] = $this->enableRmTag;
         $this->params['enableCpTag'] = $this->enableCpTag;
@@ -84,25 +91,6 @@ class ScoopIt extends \yii\base\Module
 
         if (isset($this->mapTopic)) {
             $this->params['mapTopic'] = $this->mapTopic;
-        }
-
-        $this->_initAutoScoopConfig();
-    }
-
-    private function _initAutoScoopConfig()
-    {
-        $params = $this->autoScoopConfig;
-
-        if (isset($params['autoScoopTopicCondition'])) {
-            $this->params['autoScoopTopicCondition'] = $this->autoScoopConfig['autoScoopCondition'];
-            return;
-        }
-        if (isset($params['topicSuffix'])) {
-            $var = $params['topicSuffix'];
-            $this->params['autoScoopTopicCondition'] = function($topic) use ($var) {
-                return (substr($topic->name, -strlen($var)) == $var);
-            };
-            return;
         }
     }
 

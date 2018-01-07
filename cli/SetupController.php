@@ -29,6 +29,27 @@ use humanized\scoopit\models\Keyword;
 class SetupController extends Controller
 {
 
+    /**
+     *
+     * @var Client 
+     */
+    private $_client;
+    private $_local;
+
+    /**
+     *
+     * @var string 
+     */
+    private $_postprocessorClass = null;
+
+    public function actionWip()
+    {
+        $this->_client = new Client();
+        var_dump($this->_client->getTopic('ddq'));
+
+        //var_dump($this->_client->getTopic('nano-health'));
+    }
+
     public function actionIndex($publish = 0)
     {
         if ($publish != 1 && $publish != 0) {
@@ -37,30 +58,64 @@ class SetupController extends Controller
         Topic::syncAll($publish);
         return 0;
     }
-    
-    /*
 
-    public function actionLink($topic, $route)
+    public function actionTopics()
     {
-        $model = Topic::resolve($topic);
-        if (!isset($model)) {
-            return false;
+        $this->_client = new Client();
+        $local = \yii\helpers\ArrayHelper::map(Topic::find()->asArray()->all(), 'id', 'name');
+        foreach ($batch as $id => $topic) {
+            Topic::sync($topic);
+            unset($local[$id]);
         }
-        $data = ['topic_id' => $model->id, 'name' => $route];
-        
+        Topic::deleteAll(['in', 'id', array_keys($local)]);
+        return true;
+    }
+
+    private function _requestTopicBatch()
+    {
+        $topicFilterPrefix = isset($this->module->params['topicFilterPrefix']) ? $this->module->params['topicFilterPrefix'] : null;
+        $autoscoopSuffix = isset($this->module->params['autoscoopSuffix']) ? $this->module->params['autoscoopSuffix'] : null;
+        $batch = [];
+
+        foreach ($this->_client->getTopics(TRUE) as $topic) {
+            $id = $topic['id'];
+            $name = $topic['name'];
+            if (isset($topicFilterPrefix) ? strpos($name, $topicFilterPrefix) === 0 : true && isset($autoscoopSuffix) ? strpos($name, $autoscoopSuffix) !== strlen($name) - strlen($autoscoopSuffix) : true) {
+                $batch[$id] = $topic;
+                //echo $name . "\n";
+            }
+        }
+        return $batch;
+    }
+
+    private function _initTopicSync()
+    {
         
     }
 
-    public function actionUnlink($topic, $route)
-    {
-        $model = Topic::resolve($topic);
-        if (!isset($model)) {
-            return false;
-        }
-        $data = ['topic_id' => $model->id, 'name' => $route];
-    }
-
     /*
+
+      public function actionLink($topic, $route)
+      {
+      $model = Topic::resolve($topic);
+      if (!isset($model)) {
+      return false;
+      }
+      $data = ['topic_id' => $model->id, 'name' => $route];
+
+
+      }
+
+      public function actionUnlink($topic, $route)
+      {
+      $model = Topic::resolve($topic);
+      if (!isset($model)) {
+      return false;
+      }
+      $data = ['topic_id' => $model->id, 'name' => $route];
+      }
+
+      /*
 
       public function actionKeywords($topicId)
       {

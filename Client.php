@@ -18,6 +18,10 @@ use humanized\scoopit\components\TagHelper;
 class Client extends \GuzzleHttp\Client
 {
 
+    public $autoscoopSuffix = NULL;
+    public $topicFilterPrefix = NULL;
+    public $availableTopics = [];
+
     /**
      *
      * @var type 
@@ -47,6 +51,13 @@ class Client extends \GuzzleHttp\Client
      * @var type 
      */
     private $_middlewareConfig = [];
+    private $_topicsInitialised = false;
+
+    /**
+     *
+     * @var type 
+     */
+    public $topicLabels = [];
 
     /**
      *
@@ -67,15 +78,7 @@ class Client extends \GuzzleHttp\Client
     public function __construct(array $config = array())
     {
         $this->_initConfig();
-        $this->_stack = HandlerStack::create();
-        $this->_middlewareConfig = [
-            'consumer_key' => Yii::$app->params['scoopit']['consumerKey'],
-            'consumer_secret' => Yii::$app->params['scoopit']['consumerSecret'],
-            'token' => isset(Yii::$app->params['scoopit']['token']) ? Yii::$app->params['scoopit']['token'] : NULL,
-            'token_secret' => isset(Yii::$app->params['scoopit']['tokenSecret']) ? Yii::$app->params['scoopit']['tokenSecret'] : NULL
-        ];
-        $middleware = new Oauth1($this->_middlewareConfig);
-        $this->_stack->push($middleware);
+        $this->_initMiddleware();
         parent::__construct([
             'base_uri' => Yii::$app->params['scoopit']['remoteUri'],
             'handler' => &$this->_stack,
@@ -101,31 +104,101 @@ class Client extends \GuzzleHttp\Client
         $this->_pager = 1;
     }
 
+    private function _initMiddleware()
+    {
+        $this->_stack = HandlerStack::create();
+        $this->_middlewareConfig = [
+            'consumer_key' => Yii::$app->params['scoopit']['consumerKey'],
+            'consumer_secret' => Yii::$app->params['scoopit']['consumerSecret'],
+            'token' => isset(Yii::$app->params['scoopit']['token']) ? Yii::$app->params['scoopit']['token'] : NULL,
+            'token_secret' => isset(Yii::$app->params['scoopit']['tokenSecret']) ? Yii::$app->params['scoopit']['tokenSecret'] : NULL
+        ];
+        $middleware = new Oauth1($this->_middlewareConfig);
+        $this->_stack->push($middleware);
+    }
+
     /*
      * =========================================================================
      *                      Topic Operations
      * =========================================================================
      */
 
-    public function getTopics($filerOutput = FALSE)
+    public function initAvailableTopics()
     {
-        $raw = $this->get('api/1/company/topics');
-
-        $out = \GuzzleHttp\json_decode($raw->getBody()->getContents())->topics;
-        if ($filerOutput == TRUE) {
-            $getDataFn = $this->getTopicFilter();
-            $out = array_values(array_filter(array_map($getDataFn, $out)));
+        $this->availableTopics = [];
+        $this->_topicLabels = [];
+        $topicFilterPrefix = isset($this->topicFilterPrefix) ? $this->topicFilterPrefix : '';
+        $autoscoopSuffix = isset($this->autoscoopSuffix) ? $this->autoscoopSuffix : null;
+        $autoscoopTopics = [];
+        $response = $this->get('api/1/company/topics');
+        $topics = \GuzzleHttp\json_decode($response->getBody()->getContents())->topics;
+        foreach ($topics as $topic) {
+            if (strpos($topic->name, $topicFilterPrefix) === 0) {
+                $seek = strlen($topic->name) - strlen($autoscoopSuffix);
+                if (isset($autoscoopSuffix) && strpos($topic->name, $autoscoopSuffix) === $seek) {
+                    $autoscoopTopics[str_replace($autoscoopSuffix, '', $topic->name)] = $topic->id;
+                    continue;
+                }
+                $this->availableTopics[$topic->id] = [
+                    'id' => $topic->id,
+                    'name' => $topic->name
+                ];
+                $this->topicLabels[$topic->name] = $topic->id;
+            }
         }
-        return $out;
+        if (isset($this->autoscoopSuffix)) {
+            foreach ($this->availableTopics as &$availableTopic) {
+                if (isset($autoscoopTopics[$availableTopic['name']])) {
+                    $availableTopic['auto'] = $autoscoopTopics[$availableTopic['name']];
+                }
+            }
+        }
+
+        $this->_topicsInitialised = true;
     }
 
-    public function taggedPosts($topicId, $tag)
+    public function getTopic($topic, array $queryParams = array())
+    {
+        if (!$this->_topicsInitialised) {
+            $this->initAvailableTopics();
+        }
+        $queryParams['id'] = (!is_string($topic) ?
+                        $topic :
+                        (isset($this->topicLabels[$topic]) ?
+                                $this->topicLabels[$topic] :
+                                false));
+
+        if (!$queryParams['id']) {
+            return false;
+        }
+        try {
+            $response = $this->get('api/1/topic', [
+                'query' => $queryParams
+            ]);
+            $content = \GuzzleHttp\json_decode($response->getBody()->getContents());
+            return isset($content->topic) ? $content->topic : FALSE;
+        } catch (\GuzzleHttp\Exception\RequestException $exc) {
+
+            return FALSE;
+        }
+    }
+
+    public function taggedPosts($topic, $tag)
     {
         $queryParams = [
-            'id' => $topicId,
             'order' => 'tag',
             'tag' => $tag,
         ];
+        $this->initAvailableTopics();
+        $queryParams['id'] = (!is_string($topic) ?
+                        $topic :
+                        (isset($this->_topicLabels[$topic]) ?
+                                $this->_topicLabels[$topic] :
+                                false));
+
+        if (!$queryParams['id']) {
+            return false;
+        }
         return \GuzzleHttp\json_decode($this->get('api/1/topic', [
                             'query' => $queryParams
                         ])->getBody()->getContents())->topic->curatedPosts;
@@ -235,12 +308,10 @@ class Client extends \GuzzleHttp\Client
 
     public function autoScoop($topicId, $lastUpdate, array $targets = array())
     {
-
         $acceptParams = ['action' => 'accept', 'topicId' => $topicId, 'directLink' => 0];
         $rescoopParams = ['action' => 'rescoop', 'directLink' => 0];
         $pinParams = ['action' => 'pin'];
         foreach ($this->_getContent('curablePosts', $topicId, $lastUpdate) as $curablePost) {
-            echo "\n" . 'auto-scoopin';
             $acceptParams['id'] = $curablePost->id;
             $acceptResponse = $this->post('api/1/post', ['query' => $acceptParams]);
             $rescoopParams['id'] = \GuzzleHttp\json_decode($acceptResponse->getBody()->getContents())->post->id;

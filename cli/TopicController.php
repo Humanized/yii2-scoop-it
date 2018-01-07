@@ -22,13 +22,13 @@ use humanized\scoopit\models\Topic;
  * Provides an interface to synchronise remote and local scoop.it topic content
  *
  *
- * @name Scoop.it CLI Data Synchronisation Tool
+ * @name Scoop.it CLI Topic Synchronisation Tool
  * @version 1.0
  * @author Jeffrey Geyssens <jeffrey@humanized.be>
  * @package yii2-scoopit
  *
  */
-class DataController extends Controller
+class TopicController extends Controller
 {
 
     public $verbose = false;
@@ -52,6 +52,11 @@ class DataController extends Controller
     private $_client = null;
 
     /**
+     * 
+     */
+    private $_topicsAvailable = [];
+
+    /**
      *
      * @var Topic 
      */
@@ -59,7 +64,7 @@ class DataController extends Controller
 
     /**
      *
-     * @var boolean 
+     * @var integer|boolean 
      */
     private $_autoscoop = false;
 
@@ -108,19 +113,31 @@ class DataController extends Controller
      *                              Actions
      * ************************************************************************
      */
+    public function beforeAction($action)
+    {
+        if (!isset($this->_client)) {
+            $this->_client = new Client();
+            $this->_client->autoscoopSuffix = (isset($this->module->params['autoscoopSuffix']) ? $this->module->params['autoscoopSuffix'] : null);
+            $this->_client->topicFilterPrefix = (isset($this->module->params['topicFilterPrefix']) ? $this->module->params['topicFilterPrefix'] : null);
+            $this->_client->initAvailableTopics();
+        }
+        if (!isset($this->_postprocessorClass) && isset($this->module->params['postprocessorClass'])) {
+            $this->_postprocessorClass = $this->module->params['postprocessorClass'];
+        }
+
+        return parent::beforeAction($action);
+    }
 
     /**
-     * Acquire remote Scoop.it content for all locally stored topics. 
+     * Acquire remote Scoop.it content for all curated topics. 
      * 
      * @param type $lastUpdate
      * @return int
      */
     public function actionIndex($lastUpdate = 1)
     {
-        $this->_client = new Client();
-        $topics = Topic::find()->all();
-        foreach ($topics as $topic) {
-            $this->actionSynchronise($topic->id, $lastUpdate);
+        foreach ($this->_client->availableTopics as $availableTopic) {
+            $this->actionSynchronise($availableTopic['id']);
         }
         return 0;
     }
@@ -134,15 +151,17 @@ class DataController extends Controller
      * @param type $lastUpdate
      * @return int
      */
-    public function actionSynchronise($topicId, $lastUpdate = 1)
+    public function actionSynchronise($topic, $lastUpdate = 1)
     {
-        if (false == $this->_initSynchronise($topicId)) {
+        if (false == $this->_initSynchronise($topic)) {
             return 1;
         }
+        if ($this->_saveSuggestions) {
+            $this->_importCurable($lastUpdate);
+        }
+
+
         /*
-          if ($this->_saveSuggestions) {
-          $this->_importCurable($lastUpdate);
-          }
 
           $this->_synchroniseCurated($lastUpdate);
 
@@ -151,12 +170,15 @@ class DataController extends Controller
           $this->_autoScoop($lastUpdate);
           }
 
-
-
-         * 
+         *
          */
 
         return 0;
+    }
+
+    public function actionMap($topic, $category, $label, $position = 0)
+    {
+        
     }
 
     /*
@@ -171,9 +193,9 @@ class DataController extends Controller
      * @param type $topicId
      * @return int
      */
-    private function _initSynchronise($topicId)
+    private function _initSynchronise($topic)
     {
-        if (!$this->_initSynchroniseVars($topicId)) {
+        if (!$this->_initSynchroniseVars($topic)) {
             return false;
         }
         if ($this->verbose) {
@@ -182,17 +204,16 @@ class DataController extends Controller
         return true;
     }
 
-    private function _initSynchroniseVars($topicId)
+    private function _initSynchroniseVars($topic)
     {
-        if (!isset($this->_client)) {
-            $this->_client = new Client();
-        }
-        if (!isset($this->_postprocessorClass) && isset($this->module->params['postprocessorClass'])) {
-            $this->_postprocessorClass = $this->module->params['postprocessorClass'];
-        }
-        $this->_topic = Topic::resolve($topicId);
 
-        if (!isset($this->_topic)) {
+        $this->_topic = $this->_client->availableTopics[(!is_string($topic) ?
+                        $topic :
+                        (isset($this->topicLabels[$topic]) ?
+                                $this->topicLabels[$topic] :
+                                false))];
+
+        if (!$this->_topic) {
             if ($this->verbose) {
                 $this->stderr("Topic " . (is_integer($topicId) ? "#" : "" . $topicId) . " not found in local database \n", Console::FG_YELLOW, Console::BOLD);
             }
@@ -212,8 +233,7 @@ class DataController extends Controller
                         $this->module->params[$switch]);
             }
         }
-        $autoscoopSlug = $this->_topic->name . $this->module->params['autoscoopSuffix'];
-        $this->_autoscoop = $this->_client->getTopic($autoscoopSlug);
+        $this->_autoscoop = (isset($this->_client->availableTopics[$this->_topic['id']]['auto']) ? $this->_client->availableTopics[$this->_topic['id']]['auto'] : false);
         $this->_remoteLifetime = isset($this->module->params['remoteLifetime']) ? $this->module->params['remoteLifetime'] : 0;
 
         return true;
@@ -223,7 +243,7 @@ class DataController extends Controller
     {
         //Print output
         $this->stdout("Processing data for topic: \t");
-        $this->stdout($this->_topic->name . "\n", Console::FG_CYAN, Console::BOLD);
+        $this->stdout($this->_topic['name'] . "\n", Console::FG_CYAN, Console::BOLD);
 
         $this->stdout("Postprocessor Class: \t\t");
         !isset($this->_postprocessorClass) ? $this->stdout("not set", Console::FG_RED, Console::BOLD) : $this->stdout($this->_postprocessorClass, Console::FG_CYAN, Console::BOLD);
@@ -253,7 +273,7 @@ class DataController extends Controller
     private function _autoscoop($lastUpdate)
     {
         !$this->verbose ? '' : $this->stdout("Curating unpublished posts on remote system", Console::FG_CYAN, Console::BOLD);
-        $this->_client->autoScoop($this->_topic->id, $lastUpdate);
+        $this->_client->autoScoop($this->_autoscoop, $lastUpdate, [$this->_topic['id']]);
         !$this->verbose ? '' : $this->stdout("\n");
     }
 

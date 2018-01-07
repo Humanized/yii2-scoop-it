@@ -184,19 +184,19 @@ class Topic extends \yii\db\ActiveRecord
         return true;
     }
 
-    public static function sync($data, $publish)
+    public static function sync($data)
     {
         $model = self::findOne($data['id']);
 
         //Register a remote topic-name change
         if (isset($model) && $model->name != $data['name']) {
             $model->name = $data['name'];
-            $model->save(false);
         }
         //Create local topic
         if (!isset($model)) {
-            $model = (new Topic(['id' => $data['id'], 'name' => $data['name']]))->save();
+            $model = new Topic(['id' => $data['id'], 'name' => $data['name']]);
         }
+        $model->save();
         return $model;
     }
 

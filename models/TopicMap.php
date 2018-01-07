@@ -16,6 +16,9 @@ use Yii;
 class TopicMap extends \yii\db\ActiveRecord
 {
 
+    public $saveSuggestions = false;
+    private $_client = null;
+
     /**
      * @inheritdoc
      */
@@ -50,31 +53,7 @@ class TopicMap extends \yii\db\ActiveRecord
         ];
     }
 
-    /**
-     * @return \yii\db\ActiveQuery
-     */
-    public function getTopic()
-    {
-        return $this->hasOne(Topic::className(), ['id' => 'topic_id']);
-    }
-
-    /**
-     * Returns a topic-map model by it's topic-id or it's unique name
-     * 
-     * @param integer|string $mixed - Numeric topic-id or the topic-name 
-     * @return Topic - the corresponding topic model
-     */
-    public static function resolve($mixed)
-    {
-        return self::findOne([(is_numeric($mixed) ? 'topic_id' : 'name') => $mixed]);
-    }
-
-    public static function sync($data)
-    {
-        
-    }
-
-    public static function updatePost()
+    public function sync()
     {
         
     }

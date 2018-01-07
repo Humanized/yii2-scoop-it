@@ -9,7 +9,6 @@
 namespace humanized\scoopit\cli;
 
 use yii\console\Controller;
-use humanized\scoopit\Client;
 use GuzzleHttp\Client as GuzzleClient;
 use GuzzleHttp\HandlerStack;
 use GuzzleHttp\Subscriber\Oauth\Oauth1;
