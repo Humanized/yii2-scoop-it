@@ -31,7 +31,7 @@ class m160314_205688_scoopit extends Migration
         //Main repository for all obtained scoopit results (as-per requirement)
         $this->createTable('scoopit_source', [
             'id' => $this->primaryKey(),
-            'url' => $this->string(1000)->unique()->notNull(),
+            'url' => $this->string(300)->unique()->notNull(),
             'title' => 'VARCHAR(400)',
             'description_raw' => 'TEXT',
             'description_html' => 'TEXT',
