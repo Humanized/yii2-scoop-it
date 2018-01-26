@@ -20,6 +20,8 @@ class Topic extends \yii\db\ActiveRecord
 {
     
 
+    public $excludedNewsItems = [];
+    public $limit = null;
     /**
      * @inheritdoc
      */
@@ -55,6 +57,51 @@ class Topic extends \yii\db\ActiveRecord
             'position' => 'Position',
         ];
     }
+    
+        /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getSourceTopics()
+    {
+        return $this->hasMany(SourceTopic::className(), ['topic_id' => 'id'])->andFilterWhere(['NOT IN', 'scoopit_source_topic.source_id', $this->excludedNewsItems]);
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getSources()
+    {
+        $_q = $this->hasMany(Source::className(), ['id' => 'source_id'])->via('sourceTopics');
+        if (isset($this->limit)) {
+            $_q->limit($this->limit);
+        }
+        return $_q;
+    }
+
+    /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getScoops()
+    {
+        $_q = $this->hasMany(Scoop::className(), ['id' => 'source_id'])->via('sourceTopics');
+        if (isset($this->limit)) {
+            $_q->limit($this->limit);
+        }
+        return $_q;
+    }
+    
+        /**
+     * @return \yii\db\ActiveQuery
+     */
+    public function getRelatedNews()
+    {
+        $sourcify = function($scoop) {
+            return $scoop->source;
+        };
+        $this->limit = 3;
+        return array_map($sourcify, $this->scoops);
+    }
+
 
     /**
      * @return \yii\db\ActiveQuery
@@ -64,13 +111,6 @@ class Topic extends \yii\db\ActiveRecord
         return $this->hasMany(ScoopitSourceTopic::className(), ['topic_id' => 'id']);
     }
 
-    /**
-     * @return \yii\db\ActiveQuery
-     */
-    public function getSources()
-    {
-        return $this->hasMany(ScoopitSource::className(), ['id' => 'source_id'])->viaTable('scoopit_source_topic', ['topic_id' => 'id']);
-    }
 
     /**
      * @return \yii\db\ActiveQuery

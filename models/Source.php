@@ -125,7 +125,7 @@ class Source extends \yii\db\ActiveRecord
     {
 
         $attributes = [
-          //  'id' => $post->id,
+            //  'id' => $post->id,
             'url' => $post->url,
             'title' => $post->title,
             'description_raw' => $post->content,
@@ -164,8 +164,11 @@ class Source extends \yii\db\ActiveRecord
      */
     public function hasTopic($mixed)
     {
-        var_dump($mixed);
-        $topic = Topic::resolve($mixed);
+
+        $topic = Topic::findOne($mixed);
+        if (!isset($topic)) {
+            return false;
+        }
         $model = SourceTopic::find()->where(['topic_id' => $topic->id, 'source_id' => $this->id])->one();
         return isset($model);
     }
