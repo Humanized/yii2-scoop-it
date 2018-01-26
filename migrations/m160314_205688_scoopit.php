@@ -5,6 +5,10 @@ use yii\db\Migration;
 class m160314_205688_scoopit extends Migration
 {
 
+    /**
+     *
+     * @var type 
+     */
     protected $tableOptions = 'CHARACTER SET utf8 COLLATE utf8_unicode_ci ENGINE=InnoDB';
 
     public function safeUp()
