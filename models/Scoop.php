@@ -149,11 +149,12 @@ class Scoop extends \yii\db\ActiveRecord
             //$this->stderr('Unhandled Exception: Source could not be created or retrieved');
             return null;
         }
+
         //create-or-retrieve updated local record storing publication meta-data and tags
         $scoop = self::sync($post, $source, $postprocessorClass);
         // $scoop = self::sync($post, self::getPostprocessor($postprocessorClass, 'afterScoop'), self::getPostprocessor($postprocessorClass, 'afterScoopTag'));
         if (!isset($scoop)) {
-            //          $this->stderr('Unhandled Exception: Scoop could not be created or retrieved');
+            //         $this->stderr('Unhandled Exception: Scoop could not be created or retrieved');
             return null;
         }
 
@@ -185,6 +186,7 @@ class Scoop extends \yii\db\ActiveRecord
 
     private static function _syncScoop($data, $source, $postprocessorClass)
     {
+        echo 'on scoop #' . $source->id . "\n";
         $local = Scoop::findOne($source->id);
         if (!isset($local)) {
             $local = new Scoop(['id' => $source->id]);
@@ -193,6 +195,7 @@ class Scoop extends \yii\db\ActiveRecord
         if (isset($postprocessorClass) && method_exists($postprocessorClass, 'afterScoop')) {
             $local->postProcessor = [$postprocessorClass, 'afterScoop'];
         }
+        $local->id=$source->id;
         $local->save();
         //   echo 'saved scoop' . $local->id;
         return $local;

@@ -129,7 +129,7 @@ class TopicController extends Controller
     }
 
     /**
-     * Acquire remote Scoop.it content for all curated topics. 
+     * Acquire remote Scoop.it content for all remotely curated topics. 
      * 
      * @param type $lastUpdate
      * @return int
@@ -137,14 +137,14 @@ class TopicController extends Controller
     public function actionIndex($lastUpdate = 1)
     {
         foreach ($this->_client->availableTopics as $availableTopic) {
-            $this->actionSynchronise($availableTopic['id']);
+            $this->actionSynchronise($availableTopic['id'], $lastUpdate);
         }
         return 0;
     }
 
     /**
      * 
-     * Acquire remote Scoop.it content for specified locally stored topic. 
+     * Acquire remote Scoop.it content for specified remotely curated topic 
      *  
      * 
      * @param string|int $topic
@@ -156,19 +156,23 @@ class TopicController extends Controller
         if (false == $this->_initSynchronise($topic)) {
             return 1;
         }
-        if ($this->_saveSuggestions) {
-            $this->_importCurable($lastUpdate);
-        }
+
+
+        /*
+          if ($this->_saveSuggestions) {
+          $this->_importCurable($lastUpdate);
+          }
+         * 
+         */
+        $this->_synchroniseCurated($lastUpdate);
 
 
         /*
 
-          $this->_synchroniseCurated($lastUpdate);
 
 
-          if ($this->_autoScoop) {
-          $this->_autoScoop($lastUpdate);
-          }
+
+
 
          *
          */
@@ -206,25 +210,19 @@ class TopicController extends Controller
 
     private function _initSynchroniseVars($topic)
     {
-
         $this->_topic = $this->_client->availableTopics[(!is_string($topic) ?
                         $topic :
-                        (isset($this->topicLabels[$topic]) ?
-                                $this->topicLabels[$topic] :
+                        (isset($this->_client->topicLabels[$topic]) ?
+                                $this->_client->topicLabels[$topic] :
                                 false))];
 
         if (!$this->_topic) {
             if ($this->verbose) {
-                $this->stderr("Topic " . (is_integer($topicId) ? "#" : "" . $topicId) . " not found in local database \n", Console::FG_YELLOW, Console::BOLD);
+                $this->stderr("Topic " . (is_integer($topicId) ? "#" : "" . $topicId) . "remote topic not found \n", Console::FG_YELLOW, Console::BOLD);
             }
             return false;
         }
         //Enchancement configuration parameters
-        /*
-          $this->_autoScoop = isset($this->module->params['autoscoopSuffix']);
-         * 
-         */
-
 
         foreach ($this->switches as $switch) {
             if ($switch != "autoscoop") {
@@ -270,7 +268,7 @@ class TopicController extends Controller
      * 
      * @param type $lastUpdate
      */
-    private function _autoscoop($lastUpdate)
+    private function _autoscoopTopic($lastUpdate)
     {
         !$this->verbose ? '' : $this->stdout("Curating unpublished posts on remote system", Console::FG_CYAN, Console::BOLD);
         $this->_client->autoScoop($this->_autoscoop, $lastUpdate, [$this->_topic['id']]);
@@ -285,7 +283,7 @@ class TopicController extends Controller
     private function _importCurable($lastUpdate)
     {
         !$this->verbose ? '' : $this->stdout("Importing curable posts", Console::FG_CYAN, Console::BOLD);
-        foreach ($this->_client->curablePosts($this->_topic->id, $lastUpdate) as $post) {
+        foreach ($this->_client->curablePosts($this->_topic['id'], $lastUpdate) as $post) {
             !$this->verbose ? '' : $this->_processPostOut($post, "Importing curable post");
             Source::importPost($post, $this->_postprocessorClass);
         }
@@ -298,6 +296,10 @@ class TopicController extends Controller
      */
     private function _synchroniseCurated($lastUpdate)
     {
+
+        if ($this->_autoscoop) {
+            $this->_autoscoopTopic($lastUpdate);
+        }
         if ($this->_enableRmTag) {
             $this->_processTag('#rm', 'removal');
         }
@@ -305,7 +307,7 @@ class TopicController extends Controller
             $this->_processTag('#cp', 'updated');
         }
         !$this->verbose ? '' : $this->stdout('Synchronising curated posts', Console::FG_CYAN, Console::BOLD);
-        foreach ($this->_client->curatedPosts($this->_topic->id, $lastUpdate)as $post) {
+        foreach ($this->_client->curatedPosts($this->_topic['id'], $lastUpdate)as $post) {
             //Skip when post is pending removal
             if (TagHelper::isTagSkipped($post)) {
                 continue;
@@ -319,7 +321,7 @@ class TopicController extends Controller
     private function _processTag($tag, $label)
     {
         !$this->verbose ? '' : $this->stdout('Processing ' . $label . ' posts', Console::FG_CYAN, Console::BOLD);
-        foreach ($this->_client->taggedPosts($this->_topic->id, $tag) as $post) {
+        foreach ($this->_client->taggedPosts($this->_topic['id'], $tag) as $post) {
             !$this->verbose ? '' : $this->_processPostOut($post, "Processing $label post");
             $this->_processLocalTag($post, $tag, $label);
             $this->_processRemoteTag($post, $tag, $label);

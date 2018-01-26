@@ -4,22 +4,27 @@ namespace humanized\scoopit\models\gui;
 
 use Yii;
 use yii\base\Model;
-use yii\data\ActiveDataProvider;
-use humanized\scoopit\models\TopicMap;
+use yii\data\ArrayDataProvider;
+use humanized\scoopit\models\Topic;
+use humanized\scoopit\Client;
 
 /**
- * TopicSearch represents the model behind the search form about `humanized\scoopit\models\TopicMap`.
+ * TopicSearch represents the model behind the search form about `humanized\scoopit\models\Topic`.
  */
-class TopicSearch extends TopicMap
+class TopicSearch extends Topic
 {
+
+    public $autoscoopSuffix = '-pool';
+    public $topicFilterPrefix = 'nano-';
+
     /**
      * @inheritdoc
      */
     public function rules()
     {
         return [
-            [['id', 'topic_id'], 'integer'],
-            [['name'], 'safe'],
+            [['id', 'position'], 'integer'],
+            [['label'], 'safe'],
         ];
     }
 
@@ -41,12 +46,34 @@ class TopicSearch extends TopicMap
      */
     public function search($params)
     {
-        $query = TopicMap::find();
+        $client = new Client();
+        $client->autoscoopSuffix = '-pool';
+        $client->topicFilterPrefix = 'nano-';
+        $client->initAvailableTopics();
+
+        $remote = $client->availableTopics;
+        $local = Topic::find()->all();
+        foreach ($local as $topic) {
+            if (isset($remote[$topic->id])) {
+                $remote[$topic->id]['label'] = $topic->label;
+            }
+        }
+
+        $query = Topic::find();
+
+
+        $models = $remote;
 
         // add conditions that should always apply here
 
-        $dataProvider = new ActiveDataProvider([
-            'query' => $query,
+        $dataProvider = new ArrayDataProvider([
+            'allModels' => $models,
+            'sort' => [
+                'attributes' => ['id', 'name', 'position'],
+            ],
+            'pagination' => [
+                'pageSize' => 100,
+            ],
         ]);
 
         $this->load($params);
@@ -60,13 +87,12 @@ class TopicSearch extends TopicMap
         // grid filtering conditions
         $query->andFilterWhere([
             'id' => $this->id,
-            'topic_id' => $this->topic_id,
+            'position' => $this->position,
         ]);
 
-        $query->andFilterWhere(['like', 'name', $this->name]);
+        $query->andFilterWhere(['like', 'label', $this->label]);
 
         return $dataProvider;
     }
+
 }
-
-

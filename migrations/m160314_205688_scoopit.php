@@ -15,23 +15,22 @@ class m160314_205688_scoopit extends Migration
 
     private function _createBaseTables()
     {
-
         $this->createTable('scoopit_keyword', [
             'id' => $this->primaryKey(),
             'name' => $this->string(255)->unique(),
                 ], $this->tableOptions);
 
-        $this->createTable('scoopit_topic_map', [
-            'topic_id' => 'BIGINT NOT NULL UNIQUE',
+        $this->createTable('scoopit_topic', [
+            'id' => 'BIGINT NOT NULL UNIQUE',
             'label' => $this->string(255)->unique(),
-            'position' => $this->integer()->notNull(),
+            'position' => $this->integer(),
                 ], $this->tableOptions);
 
-        $this->addForeignKey('fk_topic_map', 'scoopit_topic_map', 'topic_id', 'scoopit_topic', 'id');
+        $this->addPrimaryKey('pk_topic', 'scoopit_topic', 'id');
 
         //Main repository for all obtained scoopit results (as-per requirement)
         $this->createTable('scoopit_source', [
-            'id' => $this->primaryKey(), //Provided by scoop.it for deduplication check,
+            'id' => $this->primaryKey(),
             'url' => $this->string(1000)->unique()->notNull(),
             'title' => 'VARCHAR(400)',
             'description_raw' => 'TEXT',
@@ -46,7 +45,6 @@ class m160314_205688_scoopit extends Migration
             'language_id' => 'VARCHAR(2)',
                 ], $this->tableOptions);
 
-
         $this->createTable('scoopit_tag', [
             'id' => $this->primaryKey(),
             'name' => $this->string(255)->unique()->notNull(),
@@ -56,8 +54,8 @@ class m160314_205688_scoopit extends Migration
             'date_published' => 'INT(11) NOT NULL',
                 ], $this->tableOptions);
 
-        $this->addPrimaryKey('pk_source', 'scoopit_scoop', 'id');
         $this->addForeignKey('fk_source', 'scoopit_scoop', 'id', 'scoopit_source', 'id', 'CASCADE', 'CASCADE');
+        $this->addPrimaryKey('pk_scoop', 'scoopit_scoop', 'id');
     }
 
     private function _createLinkageTables()
@@ -112,7 +110,6 @@ class m160314_205688_scoopit extends Migration
         $this->dropTable('scoopit_scoop');
         $this->dropTable('scoopit_tag');
         $this->dropTable('scoopit_source');
-        $this->dropTable('scoopit_topic_map');
         $this->dropTable('scoopit_keyword');
         $this->dropTable('scoopit_topic');
 

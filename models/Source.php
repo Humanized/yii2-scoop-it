@@ -125,7 +125,7 @@ class Source extends \yii\db\ActiveRecord
     {
 
         $attributes = [
-            'id' => $post->id,
+          //  'id' => $post->id,
             'url' => $post->url,
             'title' => $post->title,
             'description_raw' => $post->content,
@@ -148,10 +148,12 @@ class Source extends \yii\db\ActiveRecord
 
     public function linkTopic($mixed)
     {
-        $topic = Topic::resolve($mixed);
+
+        $topic = Topic::findOne($mixed);
         if (!isset($topic)) {
             return false;
         }
+
         return SourceTopic::sync($topic->id, $this->id, $this->topicPostProcessor);
     }
 
